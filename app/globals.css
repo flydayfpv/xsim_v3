@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@import "tailwindcss"; /* สำหรับ v4 ใช้บรรทัดเดียวจบแทน @tailwind base/components/utilities */
+
+/* หากยังเจอ Error เรื่อง unknown utility ในไฟล์ CSS อื่นๆ ให้เพิ่มบรรทัดนี้ */
 
 /* TH Sarabun New */
 @font-face {
@@ -9,35 +11,47 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "THSarabunNew";
-  src: url("/fonts/THSarabunNew-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
+  margin: 0;
+  padding: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: "THSarabunNew", Arial, Helvetica, sans-serif;
+  font-family: "THSarabunNew", Arial, sans-serif;
+  overflow: hidden;
+  /* หาก @apply text-2xl ยัง Error ให้ใช้ font-size โดยตรง */
+  font-size: 1.5rem; 
+}
+
+/* =========================
+   CARD BASE (Fix สำหรับ v4)
+========================= */
+.card {
+  /* ใน v4 ถ้า @apply มีปัญหา ให้เขียนเป็น CSS ปกติ หรือมั่นใจว่าใช้ @import "tailwindcss" ด้านบน */
+  @apply relative rounded-xl bg-white/10 backdrop-blur shadow-lg border border-white/30;
+}
+
+.card-dark {
+  @apply bg-slate-900/80 text-white border-slate-700;
+}
+
+/* Increase SweetAlert2 Text Sizes */
+.swal-title-large {
+  font-size: 3rem !important; /* Extremely large title */
+  font-weight: 800 !important;
+  color: #ff4d4d !important;
+}
+
+.swal-text-large {
+  font-size: 1.8rem !important; /* Large body text */
+  line-height: 1.5 !important;
+}
+
+.swal-button-large {
+  font-size: 1.5rem !important; /* Large confirm button */
+  padding: 15px 40px !important;
 }
