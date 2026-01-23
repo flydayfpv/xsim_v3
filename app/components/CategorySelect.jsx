@@ -14,7 +14,7 @@ export default function CategorySelect({
 
     return (
         <div className={className}>
-            <label className="block text-sm font-bold mb-2 uppercase text-gray-600 dark:text-gray-400">
+            <label className="block text-xl font-bold mb-2 uppercase text-gray-400 dark:text-gray-400">
                 Item Category
             </label>
             <select
@@ -24,6 +24,11 @@ export default function CategorySelect({
                 onChange={(e) => onChange(e.target.value)}
             >
                 <option value="">-- Select Category --</option>
+                {filteredCategories.length > 0 && (
+                    <option value="all" className="font-bold text-red-500">
+                        All Categories
+                    </option>
+                )}
                 {filteredCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                         {cat.name}

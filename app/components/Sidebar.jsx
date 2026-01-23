@@ -135,7 +135,7 @@ const Sidebar = ({ user, setUser }) => {
                                         className={`transition-colors duration-300 ${isCollapsed ? "text-red-500" : "text-slate-500"}`} 
                                     />
                                     {!isCollapsed && (
-                                        <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">
+                                        <span className="font-bold text-slate-500 uppercase tracking-widest text-[16px]">
                                             {group.groupLabel}
                                         </span>
                                     )}
@@ -168,7 +168,7 @@ const Sidebar = ({ user, setUser }) => {
                                                 }`}
                                             >
                                                 <Icon size={18} className="shrink-0" />
-                                                <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>
+                                                <span className="font-medium whitespace-nowrap text-xl">{item.label}</span>
                                             </Link>
                                         );
                                     })}

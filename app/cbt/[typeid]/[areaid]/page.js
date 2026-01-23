@@ -175,7 +175,9 @@ export default function Page() {
 	const [lastClickInside, setLastClickInside] = useState(null);
 	const [clicked, setClicked] = useState(false);
 
-	const area = params.typeid;
+	const area = params.areaid;
+	const typeid = params.typeid;
+	
 	const [score, setScore] = useState(0);
 	const [hits, setHits] = useState(0);
 	const [fars, setFars] = useState(0);
@@ -284,13 +286,24 @@ export default function Page() {
 	///
 
 	const fetchImages = async () => {
-		try {
-			const res = await fetch(`${API_URL}/cbt/random/${area}`);
-			const data = await res.json();
-			const images = Array.isArray(data) ? data : [data];
-			setImageList(images);
-		} catch (err) { console.error(err); }
-	};
+    try {
+        // 1. ตรวจสอบลำดับให้ตรงกับ Backend: /random/:areaID/:categoryID
+        const targetArea = area;        // จาก params.areaid (เลข 1)
+        const targetCat = typeid || 'all'; // จาก params.typeid ('all')
+
+        // ✅ แก้ไขลำดับ URL ตรงนี้
+        const res = await fetch(`${API_URL}/cbt/random/${targetArea}/${targetCat}`);
+
+        if (!res.ok) throw new Error('Failed to fetch images');
+
+        const data = await res.json();
+        setImageList(Array.isArray(data) ? data : [data]);
+
+    } catch (err) {
+        console.error("Fetch Images Error:", err);
+        setImageList([]);
+    }
+};
 
 	const fetchUser = async () => {
 		try {
@@ -359,7 +372,7 @@ export default function Page() {
 		leftCanvasRef.current = new _Canvas("canvasLeft", -820, 0, () => nextImage(false));
 		rightCanvasRef.current = new _Canvas("canvasRight", -820, 0, () => { });
 
-		rightCanvasRef.current.debugOffsetY = 175;
+		rightCanvasRef.current.debugOffsetY = 177;
 
 		leftCanvasRef.current.start(canvasSize.width, canvasSize.height);
 		rightCanvasRef.current.start(canvasSize.width, canvasSize.height);
@@ -460,7 +473,7 @@ export default function Page() {
 
 			setLastClickInside(inside);
 			setClicked(true);
-			canvasRef.drawDebugRect(itemPos);
+			// canvasRef.drawDebugRect(itemPos);
 		}
 	};
 
