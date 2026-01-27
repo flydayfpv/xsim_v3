@@ -55,3 +55,13 @@ body {
   font-size: 1.5rem !important; /* Large confirm button */
   padding: 15px 40px !important;
 }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #dc2626; /* red-600 */
+  border-radius: 10px;
+}

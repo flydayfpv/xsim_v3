@@ -57,7 +57,7 @@ export default function SelectionPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0a] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#0a0a0a]/90 flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
       {/* Header Section */}
       <div className="text-center mb-12 relative z-10">

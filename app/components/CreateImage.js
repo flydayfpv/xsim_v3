@@ -1,7 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import CategorySelect from './CategorySelect';
-import Swal from 'sweetalert2'; // Import SweetAlert2
+import Swal from 'sweetalert2';
 
 export default function DualViewEditor() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3015';
@@ -29,22 +28,14 @@ export default function DualViewEditor() {
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-    // --- RESET FUNCTION ---
     const resetEditor = () => {
-        // Reset Selection States
         setSelectedItem(null);
         setSelectedCategoryId('');
         setItemList([]);
         setBaggageCode('');
-        
-        // Reset Images
         setImages({ bgTop: null, itemTop: null, bgSide: null, itemSide: null });
-        
-        // Reset Item Controls
         setRect({ x: 100, y: 100, z: 100, w: 100, h: 100 });
         setThreshold(230);
-        
-        // Reset File Inputs manually if necessary (via refs or key reset)
         document.querySelectorAll('input[type="file"]').forEach(input => input.value = "");
     };
 
@@ -54,34 +45,52 @@ export default function DualViewEditor() {
         fetch(`${API_URL}/area/`).then(res => res.json()).then(setAreas);
     }, [API_URL]);
 
-    // 2. Load Items
+    // 2. Load Items when Category changes
     useEffect(() => {
         if (!selectedCategoryId) { setItemList([]); return; }
-        fetch(`${API_URL}/itemImage/category/${selectedCategoryId}`).then(res => res.json()).then(setItemList);
+        // Reset item selection when changing category
+        setSelectedItem(null);
+        setImages(p => ({ ...p, itemTop: null, itemSide: null }));
+        
+        fetch(`${API_URL}/itemImage/category/${selectedCategoryId}`)
+            .then(res => res.json())
+            .then(setItemList);
     }, [selectedCategoryId, API_URL]);
 
-    // 3. Metadata Sync
+    // 3. Metadata Sync (Baggage Code Generation)
     useEffect(() => {
-        if (!selectedAreaId || !selectedItem || !selectedCategoryId) return;
+        if (!selectedAreaId || !selectedCategoryId) {
+            setBaggageCode('');
+            return;
+        }
+
         const fetchCode = async () => {
             try {
-                const res = await fetch(`${API_URL}/baggage/nextCode?areaID=${selectedAreaId}&itemImageID=${selectedItem.id}`);
+                const res = await fetch(
+                    `${API_URL}/baggage/nextCode?areaID=${selectedAreaId}&itemCategoryID=${selectedCategoryId}`
+                );
                 const data = await res.json();
+
                 const year = 2026;
                 const areaMap = { 1: 'CB', 2: 'HB', 3: 'CM' };
-                const catPrefix = parseInt(selectedCategoryId) > 1 ? 'T' : 'C';
-                setBaggageCode(`${year}-AOTAVSEC-XSIM${examType}-${areaMap[selectedAreaId] || 'XX'}-${catPrefix}${data.nextNumber || '00001'}`);
+                const catPrefix = parseInt(selectedCategoryId) === 1 ? 'C' : 'T';
+                const formattedNumber = data.nextNumber || '00001';
+
+                setBaggageCode(
+                    `${year}-AOTAVSEC-XSIM${examType}-${areaMap[selectedAreaId] || 'XX'}-${catPrefix}${formattedNumber}`
+                );
             } catch (err) {
                 console.error("Code fetch error", err);
             }
         };
-        fetchCode();
-    }, [selectedAreaId, selectedItem, selectedCategoryId, examType, API_URL]);
 
-    // --- Handlers ---
+        fetchCode();
+    }, [selectedAreaId, selectedCategoryId, examType, API_URL]);
+
+    // --- Canvas Handlers ---
     const handleMouseDown = (e, viewType) => {
         const canvas = viewType === 'top' ? topCanvasRef.current : sideCanvasRef.current;
-        if (!canvas) return;
+        if (!canvas || !images.itemTop) return; // Prevent dragging if no item
         const canvasRect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - canvasRect.left;
         const mouseY = e.clientY - canvasRect.top;
@@ -107,7 +116,8 @@ export default function DualViewEditor() {
         setSelectedItem(item);
         const t = new Image(); const s = new Image();
         t.crossOrigin = s.crossOrigin = "anonymous";
-        let l = 0; const c = () => { if (++l === 2) { setImages(p => ({ ...p, itemTop: t, itemSide: s })); setRect(p => ({ ...p, w: t.width, h: t.height })); }};
+        let l = 0;
+        const c = () => { if (++l === 2) { setImages(p => ({ ...p, itemTop: t, itemSide: s })); setRect(p => ({ ...p, w: t.width, h: t.height })); } };
         t.onload = s.onload = c;
         t.src = `${API_URL}/${item.top}?t=${Date.now()}`;
         s.src = `${API_URL}/${item.side}?t=${Date.now()}`;
@@ -117,11 +127,8 @@ export default function DualViewEditor() {
         if (!ctx) return;
         ctx.canvas.width = bg?.width || 800; ctx.canvas.height = bg?.height || 600;
         ctx.globalCompositeOperation = 'source-over';
-        if (bg) ctx.drawImage(bg, 0, 0); 
-        else { 
-            ctx.fillStyle = "#0f172a"; 
-            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
-        }
+        if (bg) ctx.drawImage(bg, 0, 0);
+        else { ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
 
         if (itm?.complete) {
             const tmp = document.createElement('canvas'); const tCtx = tmp.getContext('2d');
@@ -129,8 +136,8 @@ export default function DualViewEditor() {
             tCtx.drawImage(itm, 0, 0, rect.w, rect.h);
             const d = tCtx.getImageData(0, 0, rect.w, rect.h);
             for (let i = 0; i < d.data.length; i += 4) {
-                if ((0.299 * d.data[i] + 0.587 * d.data[i+1] + 0.114 * d.data[i+2]) > threshold) d.data[i+3] = 0;
-                else d.data[i+3] *= opacity;
+                if ((0.299 * d.data[i] + 0.587 * d.data[i + 1] + 0.114 * d.data[i + 2]) > threshold) d.data[i + 3] = 0;
+                else d.data[i + 3] *= opacity;
             }
             tCtx.putImageData(d, 0, 0);
             if (multiplyEnabled) ctx.globalCompositeOperation = 'multiply';
@@ -144,59 +151,41 @@ export default function DualViewEditor() {
     }, [images, processAndDraw]);
 
     const uploadCanvas = async () => {
-        if (!selectedItem || !baggageCode) {
-            Swal.fire('Warning', 'Please select an item and ensure the code is generated.', 'warning');
+        if (!baggageCode) {
+            Swal.fire('Warning', 'Please select an Area and Category to generate a code.', 'warning');
             return;
         }
-
-        // Show Loading
-        Swal.fire({
-            title: 'Saving Simulation...',
-            html: 'Uploading data to registry',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
+        Swal.fire({ title: 'Saving Simulation...', html: 'Uploading data to registry', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
         try {
             const formData = new FormData();
             const topB = await new Promise(r => topCanvasRef.current.toBlob(r, "image/png"));
             const sideB = await new Promise(r => sideCanvasRef.current.toBlob(r, "image/png"));
-            
-            formData.append("top", topB, "top.png"); 
+            formData.append("top", topB, "top.png");
             formData.append("side", sideB, "side.png");
-            formData.append("itemImageID", selectedItem.id); 
+            
+            // FIX: Use optional chaining to handle null selectedItem (e.g., in "Clear" mode)
+            formData.append("itemImageID", selectedItem?.id || ""); 
+            
             formData.append("areaID", selectedAreaId);
-            formData.append("itemCategoryID", selectedCategoryId); 
+            formData.append("itemCategoryID", selectedCategoryId);
             formData.append("examType", examType);
-            formData.append("code", baggageCode); 
+            formData.append("code", baggageCode);
             formData.append("itemPos", JSON.stringify(rect));
 
             const res = await fetch(`${API_URL}/baggage/canvas-upload`, { method: "POST", body: formData });
-            
             if (res.ok) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Baggage Saved!',
-                    text: 'The simulation has been stored successfully.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                resetEditor(); // Reset after successful post
-            } else {
-                const errData = await res.json();
-                throw new Error(errData.message || "Upload failed");
-            }
-        } catch (error) {
-            Swal.fire('Error', error.message, 'error');
-        }
+                Swal.fire({ icon: 'success', title: 'Baggage Saved!', timer: 2000, showConfirmButton: false });
+                resetEditor();
+            } else { const errData = await res.json(); throw new Error(errData.message || "Upload failed"); }
+        } catch (error) { Swal.fire('Error', error.message, 'error'); }
     };
 
     return (
         <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans rounded-2xl" onMouseUp={() => setIsDragging(false)}>
-            
+
             <div className="flex-1 p-4 pb-40 overflow-y-auto">
                 {/* 1. TOP SELECTION BAR */}
-                <div className="flex gap-6 mb-4 bg-slate-900/90 p-3 rounded-xl border border-slate-800 justify-center items-center">
+                <div className="flex gap-6 mb-4 bg-slate-900/90 p-3 rounded-xl border border-slate-800 justify-center items-center shadow-lg">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Area:</span>
                     <div className="flex gap-4">
                         {areas.map(area => (
@@ -209,19 +198,21 @@ export default function DualViewEditor() {
                     <div className="ml-8 pl-8 border-l border-slate-700 flex items-center gap-3">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">Registry:</span>
                         <input readOnly value={baggageCode} className="bg-black border border-slate-700 text-orange-500 font-mono text-[10px] px-3 py-1 rounded w-64 focus:outline-none" />
-                        <select value={examType} onChange={e => setExamType(e.target.value)} className="bg-slate-800 text-[10px] font-bold px-2 py-1 rounded border border-slate-700">
+                        <select value={examType} onChange={e => setExamType(e.target.value)} className="bg-slate-800 text-[10px] font-bold px-2 py-1 rounded border border-slate-700 text-white">
                             <option value="CBT">CBT</option>
                             <option value="CBA">CBA</option>
                         </select>
                     </div>
                 </div>
 
-                {/* Background Selectors */}
-                <div className="flex gap-4 mb-6 bg-slate-900/80 p-4 rounded-xl border border-slate-800 justify-center">
+                {/* 2. BACKGROUND LOADER */}
+                <div className="flex gap-4 mb-6 bg-slate-900/80 p-4 rounded-xl border border-slate-800 justify-center shadow-md">
                     {['bgTop', 'bgSide'].map(key => (
                         <div key={key} className="flex flex-col gap-1 px-4 border-r last:border-0 border-slate-700">
-                            <span className="text-[16px] font-bold text-orange-500 uppercase">{key === 'bgTop' ? 'Top View BG' : 'Side View BG'}</span>
-                            <input type="file" className="text-[10px]" onChange={e => {
+                            <span className="text-[12px] font-bold text-orange-500 uppercase italic tracking-tighter">
+                                {key === 'bgTop' ? 'Top View Source' : 'Side View Source'}
+                            </span>
+                            <input type="file" className="text-[10px] text-slate-400 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-2 file:mr-2" onChange={e => {
                                 if (e.target.files[0]) {
                                     const img = new Image(); img.onload = () => setImages(p => ({ ...p, [key]: img }));
                                     img.src = URL.createObjectURL(e.target.files[0]);
@@ -231,65 +222,176 @@ export default function DualViewEditor() {
                     ))}
                 </div>
 
+                {/* 3. VIEWING TERMINALS */}
                 <div className="flex flex-row gap-6 justify-center">
                     {['top', 'side'].map(v => (
-                        <div key={v} className="bg-black border border-slate-800 rounded-lg shadow-2xl overflow-hidden">
-                            <div className="bg-slate-800 text-[10px] px-2 py-1 font-bold uppercase tracking-widest flex justify-between">
-                                <span>{v} View</span>
-                                {images[v === 'top' ? 'bgTop' : 'bgSide'] && <span className="text-emerald-500 text-[8px]">BG LOADED</span>}
+                        <div key={v} className="bg-black border-2 border-slate-800 rounded-2xl shadow-2xl overflow-hidden transition-all hover:border-slate-700">
+                            <div className="bg-slate-800 text-[10px] px-4 py-2 font-black uppercase tracking-[0.2em] flex justify-between items-center border-b border-slate-700">
+                                <span className="text-slate-300 italic">Imaging Terminal: {v.toUpperCase()}</span>
+                                {images[v === 'top' ? 'bgTop' : 'bgSide'] && <span className="text-emerald-400 animate-pulse">● FEED ACTIVE</span>}
                             </div>
-                            <canvas ref={v === 'top' ? topCanvasRef : sideCanvasRef} onMouseDown={e => handleMouseDown(e, v)} onMouseMove={e => handleMouseMove(e, v)} className="cursor-move" />
+                            <canvas ref={v === 'top' ? topCanvasRef : sideCanvasRef} onMouseDown={e => handleMouseDown(e, v)} onMouseMove={e => handleMouseMove(e, v)} className="cursor-crosshair bg-slate-900" />
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="w-80 bg-slate-900 border-l border-slate-800 p-4 flex flex-col shadow-2xl z-20 rounded-2xl">
-                <h2 className="text-orange-500 font-black text-lg mb-4 border-b border-slate-800 pb-2 italic text-center uppercase tracking-tighter">X-SIM V3 REGISTRY</h2>
-                <CategorySelect categories={categories} value={selectedCategoryId} onChange={setSelectedCategoryId} skipFirst={true} className="mb-6 text-black" />
-                <div className="flex-1 overflow-y-auto space-y-2">
+            {/* 🛠️ SIDEBAR: REGISTRY CONTROLS */}
+            <div className="w-85 bg-slate-900 border-l border-slate-800 p-6 flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)] z-20 rounded-l-3xl">
+                <h2 className="text-orange-500 font-black text-xl mb-6 border-b border-slate-800 pb-4 italic text-center uppercase tracking-tighter">
+                    X-SIM V3 REGISTRY
+                </h2>
+
+                <div className="mb-6 group">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
+                        Threat Category
+                    </label>
+
+                    <div className="relative">
+                        <select
+                            value={selectedCategoryId}
+                            onChange={(e) => setSelectedCategoryId(e.target.value)}
+                            className="w-full bg-black text-white border-2 border-slate-800 rounded-xl py-3 px-4 text-xs font-black outline-none focus:border-orange-600 transition-all appearance-none cursor-pointer shadow-inner pr-10"
+                        >
+                            <option value="" disabled>-- Classify Threat --</option>
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id} className="bg-slate-900 py-2">
+                                    {cat.name.toUpperCase()}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover:text-orange-500 transition-colors">
+                            ▼
+                        </div>
+                    </div>
+
+                    {selectedCategoryId && (
+                        <div className="mt-3 px-4 py-3 bg-orange-600/10 border-l-4 border-orange-600 rounded-r-lg animate-in fade-in slide-in-from-left-2 duration-300">
+                            <span className="text-[8px] font-black text-orange-500/60 uppercase tracking-[0.2em] block mb-0.5">
+                                Active Registry
+                            </span>
+                            <span className="text-[12px] font-black text-orange-400 uppercase leading-tight break-words block">
+                                {categories.find(c => c.id.toString() === selectedCategoryId.toString())?.name}
+                            </span>
+
+                            <div className="mt-2 pt-2 border-t border-orange-500/20">
+                                <span className="text-[8px] font-bold text-slate-500 uppercase block mb-1">Generated Image Code</span>
+                                <span className="text-[11px] font-mono text-white bg-black/50 px-2 py-0.5 rounded border border-white/5">
+                                    {baggageCode || 'GENERATING...'}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ITEM LIST */}
+                <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar border-t border-slate-800 pt-4">
+                    <div className="flex justify-between items-center mb-2 px-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            Database Objects
+                        </label>
+                        {selectedCategoryId && (
+                            <span className="text-[9px] font-mono text-slate-600">
+                                COUNT: {itemList.length.toString().padStart(2, '0')}
+                            </span>
+                        )}
+                    </div>
+
                     {itemList.map(item => (
-                        <div key={item.id} onClick={() => handleSelectItem(item)} className={`bg-slate-800/80 border border-slate-700 rounded-lg p-2 hover:border-orange-500 cursor-pointer flex gap-3 items-center group ${selectedItem?.id === item.id ? 'border-orange-500 bg-slate-800' : ''}`}>
-                            <div className="w-12 h-12 bg-black rounded border border-slate-600 flex-shrink-0 overflow-hidden">
-                                <img src={`${API_URL}/${item.top}`} alt="p" className="w-full h-full object-contain" />
+                        <div
+                            key={item.id}
+                            onClick={() => handleSelectItem(item)}
+                            className={`group relative bg-slate-800/40 border border-slate-700 rounded-xl p-3 hover:border-orange-500 cursor-pointer flex gap-4 items-center transition-all 
+                    ${selectedItem?.id === item.id
+                                    ? 'border-orange-600 bg-slate-800 ring-2 ring-orange-900/20 translate-x-1'
+                                    : 'hover:bg-slate-800/60'
+                                }`}
+                        >
+                            <div className="w-14 h-14 bg-black rounded-lg border border-slate-600 flex-shrink-0 overflow-hidden shadow-lg p-1 group-hover:border-orange-500/50 transition-colors">
+                                <img
+                                    src={`${API_URL}/${item.top}`}
+                                    alt="p"
+                                    className={`w-full h-full object-contain transition-all duration-300 
+                            ${selectedItem?.id === item.id ? 'grayscale-0 scale-110' : 'grayscale group-hover:grayscale-0'}`
+                                    }
+                                />
                             </div>
-                            <span className="text-xs font-bold truncate group-hover:text-orange-400">{item.name}</span>
+
+                            <div className="flex flex-col overflow-hidden">
+                                <span className={`text-[11px] font-black uppercase tracking-tighter leading-tight truncate transition-colors
+                        ${selectedItem?.id === item.id ? 'text-orange-400' : 'text-slate-300 group-hover:text-white'}`
+                                }>
+                                    {item.name}
+                                </span>
+                                <span className="text-[8px] font-mono text-slate-600 mt-1 uppercase">
+                                    UID: {item.id.toString().padStart(4, '0')}
+                                </span>
+                            </div>
+
+                            <div className={`absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-8 rounded-full bg-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.5)] transition-all duration-300 
+                    ${selectedItem?.id === item.id ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-50'}`
+                            }></div>
                         </div>
                     ))}
+
+                    {itemList.length === 0 && selectedCategoryId && (
+                        <div className="flex flex-col items-center justify-center py-20 text-slate-700 opacity-40">
+                            <div className="text-4xl mb-2">📁</div>
+                            <div className="italic text-[10px] uppercase font-black tracking-widest text-center">
+                                No objects registered <br /> in this classification
+                            </div>
+                        </div>
+                    )}
+
+                    {!selectedCategoryId && (
+                        <div className="flex flex-col items-center justify-center py-20 text-slate-800">
+                            <div className="text-2xl mb-2 animate-pulse">📡</div>
+                            <div className="text-[9px] uppercase font-black tracking-[0.2em] text-center">
+                                Awaiting Category Selection...
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Footer Control Bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md p-4 border-t border-slate-700 flex flex-row items-center justify-between gap-6 z-50">
-                <div className="flex items-center gap-6 border-r border-slate-800 pr-6">
-                    <div className="flex items-center gap-2">
-                        <input type="checkbox" checked={multiplyEnabled} onChange={e => setMultiplyEnabled(e.target.checked)} className="h-4 w-4 accent-blue-500" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Multiply</span>
+            {/* 🔵 FOOTER: SYSTEM ADJUSTMENTS */}
+            <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl p-6 border-t border-slate-800 flex flex-row items-center justify-between gap-8 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
+                <div className="flex items-center gap-10 border-r border-slate-800 pr-10">
+                    <div className="flex items-center gap-3">
+                        <input type="checkbox" checked={multiplyEnabled} onChange={e => setMultiplyEnabled(e.target.checked)} className="h-5 w-5 accent-blue-500 cursor-pointer" />
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Blend Mode</span>
                     </div>
-                    <div className="w-24">
-                        <span className="text-[10px] text-yellow-500 block font-bold uppercase">Luma: {threshold}</span>
-                        <input type="range" min="0" max="255" value={threshold} onChange={e => setThreshold(+e.target.value)} className="w-full h-1 accent-yellow-500" />
+                    <div className="w-48">
+                        <div className="flex justify-between mb-1">
+                            <span className="text-[10px] text-yellow-500 font-black uppercase tracking-widest">Luma Threshold</span>
+                            <span className="text-[10px] text-white font-mono">{threshold}</span>
+                        </div>
+                        <input type="range" min="0" max="255" value={threshold} onChange={e => setThreshold(+e.target.value)} className="w-full h-1.5 accent-yellow-500 cursor-ew-resize bg-slate-700 rounded-lg appearance-none" />
                     </div>
                 </div>
-                <div className="flex gap-4 items-center flex-1">
+
+                <div className="flex gap-6 items-center flex-1">
                     {['x', 'y', 'z'].map(axis => (
                         <div key={axis} className="flex flex-col">
-                            <span className="text-[9px] text-slate-500 font-bold uppercase">Pos {axis}</span>
-                            <input type="number" value={rect[axis]} onChange={e => setRect(p => ({ ...p, [axis]: +e.target.value }))} className="w-16 bg-black text-[10px] p-1 rounded border border-slate-700" />
+                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">POS {axis}</span>
+                            <input type="number" value={rect[axis]} onChange={e => setRect(p => ({ ...p, [axis]: +e.target.value }))} className="w-20 bg-black text-orange-500 font-mono text-xs p-2 rounded-lg border border-slate-700 focus:border-orange-500 outline-none shadow-inner" />
                         </div>
                     ))}
-                    <div className="flex flex-col ml-2">
-                        <span className="text-[9px] text-slate-500 font-bold uppercase">W / H</span>
-                        <div className="flex gap-1">
-                            <input type="number" value={rect.w} onChange={e => setRect(p => ({ ...p, w: +e.target.value }))} className="w-12 bg-black text-[10px] p-1 rounded border border-slate-700" />
-                            <input type="number" value={rect.h} onChange={e => setRect(p => ({ ...p, h: +e.target.value }))} className="w-12 bg-black text-[10px] p-1 rounded border border-slate-700" />
+                    <div className="h-10 w-[1px] bg-slate-800 mx-2"></div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Dimensions (W/H)</span>
+                        <div className="flex gap-2">
+                            <input type="number" value={rect.w} onChange={e => setRect(p => ({ ...p, w: +e.target.value }))} className="w-16 bg-black text-white font-mono text-xs p-2 rounded-lg border border-slate-700 outline-none" />
+                            <input type="number" value={rect.h} onChange={e => setRect(p => ({ ...p, h: +e.target.value }))} className="w-16 bg-black text-white font-mono text-xs p-2 rounded-lg border border-slate-700 outline-none" />
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={resetEditor} className="bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black px-4 py-2 rounded-lg">RESET</button>
-                    <button onClick={uploadCanvas} className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-4 py-2 rounded-lg shadow-lg uppercase tracking-wider">Save Simulation</button>
+
+                <div className="flex gap-4">
+                    <button onClick={resetEditor} className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-black px-6 py-3 rounded-xl border border-white/5 transition-all active:scale-95 uppercase">Clear All</button>
+                    <button onClick={uploadCanvas} className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black px-8 py-3 rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.3)] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-2 italic">
+                        Deploy Simulation <span className="text-[14px]">↗</span>
+                    </button>
                 </div>
             </div>
         </div>
