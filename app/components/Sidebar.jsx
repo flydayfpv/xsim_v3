@@ -17,7 +17,7 @@ const MENU_GROUPS = [
         icon: Scan,
         items: [
             { label: "X-Ray Simulator (CBT)", path: "/pages/selection", roles: [1, 2, 3], icon: Scan },
-            { label: "Corrective (CBT)", path: "/pages/CorrectiveSelection", roles: [1, 2, 3], icon: ShieldCheck },
+            { label: "Corrective (CBT)", path: "/pages/CorrectiveList", roles: [1, 2, 3], icon: ShieldCheck },
 
             { label: "My Training", path: "/training", roles: [1, 2], icon: GraduationCap },
             { label: "Gallery", path: "/pages/gallery", roles: [1, 2, 3], icon: PlusSquare },

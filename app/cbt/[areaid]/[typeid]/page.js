@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { getOperatorProfile, clearGameSession } from "@/app/lib/auth";
 import Swal from "sweetalert2";
 
 const ICON_CHAR = "🔍";
@@ -94,7 +95,7 @@ export default function Page() {
     const router = useRouter();
     const area = params.areaid;
     const typeid = params.typeid;
-
+    const [operatorName, setOperatorName] = useState("Loading...");
     const [category, setCategory] = useState([]);
     const [selectedAnswer, setSelectedAnswer] = useState("");
     const [imageIndex, setImageIndex] = useState(0);
@@ -109,36 +110,69 @@ export default function Page() {
     const [categoryStats, setCategoryStats] = useState({});
     const [wrongAnswers, setWrongAnswers] = useState([]);
     const [afkStrikes, setAfkStrikes] = useState(0);
-
+    const [fullProfile, setFullProfile] = useState(null);
     const leftCanvasRef = useRef(null);
     const rightCanvasRef = useRef(null);
     const [lastClickInside, setLastClickInside] = useState(null);
     const afkTimerRef = useRef(null);
 
+
+    const loadOperator = async () => {
+        try {
+            const profile = await getOperatorProfile();
+            // profile.fullName มาจาก format ที่เราทำไว้ใน util (prefix + fname + lname)
+            setOperatorName(profile.fullName);
+        } catch (err) {
+            console.error("Auth Error:", err);
+            if (err.message === "SESSION_EXPIRED" || err.message === "NO_TOKEN") {
+                setOperatorName("Session Expired");
+                // router.push("/login");
+            } else {
+                setOperatorName("Unknown Operator");
+            }
+        }
+    };
     // Initial Load
     useEffect(() => {
         const fetchMetadata = async () => {
             try {
+                // 1. โหลดข้อมูล Operator ก่อน เพื่อให้ได้ userID และ Profile
+                let currentUserId = null;
+                try {
+                    const profile = await getOperatorProfile();
+                    setOperatorName(profile.fullName);
+                    setUser(profile); // เก็บข้อมูล user ตัวเต็มไว้ใน State
+                    currentUserId = profile.userID;
+                } catch (authErr) {
+                    console.error("Auth Error:", authErr);
+                    setOperatorName("Unauthorized");
+                }
+
+                // 2. โหลด Categories และ Images พร้อมกัน
                 const [catRes, imgRes] = await Promise.all([
                     fetch(`${API_URL}/itemCategory`),
                     fetch(`${API_URL}/cbt/random/${area}/${typeid || 'all'}`)
                 ]);
-                const categories = await catRes.json();
-                setCategory(categories);
 
-                // --- DEFAULT SELECTION SETTING ---
+                if (!catRes.ok || !imgRes.ok) throw new Error("Metadata fetch failed");
+
+                const categories = await catRes.json();
+                const imgData = await imgRes.json();
+
+                // ตั้งค่า Categories
+                setCategory(categories);
                 if (categories.length > 0) {
                     setSelectedAnswer(categories[0].id.toString());
                 }
 
-                const imgData = await imgRes.json();
+                // ตั้งค่า Image List
                 setImageList(Array.isArray(imgData) ? imgData : [imgData]);
 
-                const XuserId = localStorage.getItem("XuserId");
-                const userRes = await fetch(`${API_URL}/users/${XuserId}`);
-                setUser(await userRes.json());
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error("Fetch Metadata Error:", err);
+            }
         };
+
         fetchMetadata();
     }, [area, typeid]);
 
@@ -270,24 +304,95 @@ export default function Page() {
         nextImage(true);
     };
 
-    const finishGame = () => {
-        setIsFinished(true);
-        const summary = {
-            score, hits, fars,
-            efficiency: ((hits / (hits + fars + 0.0001)) * 100).toFixed(1),
-            categoryStats,
-            wrongAnswers,
-            userName: `${user?.fname} ${user?.lname}`,
-            timeUsed: (courseTime * 60) - timeLeft
-        };
+    // ... ภายใน Component
+
+    /**
+     * 🚀 ฟังก์ชันจบเกมแบบ Auto-close และ Auto-redirect
+     * @param {boolean} autoSubmit - true เมื่อเวลาหมด (เปลี่ยนหน้าทันที), false เมื่อกดปุ่ม (โชว์ Alert 1 วิแล้วเปลี่ยนหน้า)
+     */
+    // 🚀 ฟังก์ชันจบเกมแบบแก้ไขเรื่องข้อมูลซ้ำซ้อน
+  const finishGame = async (autoSubmit = false) => {
+    const currentEfficiency = parseFloat(((hits / (hits + fars + 0.0001)) * 100).toFixed(1));
+
+    let calculatedTimeUse = 0;
+    if (currentEfficiency > 80) calculatedTimeUse = 20;
+    else if (currentEfficiency > 70) calculatedTimeUse = 16;
+    else if (currentEfficiency > 60) calculatedTimeUse = 14;
+    else if (currentEfficiency >= 50) calculatedTimeUse = 12;
+
+    const summary = {
+        userId: user?.userID || user?.id,
+        score,
+        hits,
+        fars,
+        efficiency: currentEfficiency,
+        categoryStats,
+        wrongAnswers,
+        userName: operatorName,       
+        timeUsed: calculatedTimeUse
+    };
+
+    setIsFinished(true);
+
+    try {
+        // เก็บไว้ใช้หน้า summary
         localStorage.setItem("session_result", JSON.stringify(summary));
-        router.push(`/cbt/${area}/${typeid}/summary`);
+
+        const apiPayload = {
+            ...summary,
+            categoryStats: JSON.stringify(categoryStats),
+            wrongAnswers: JSON.stringify(wrongAnswers)
+        };
+
+        const token = localStorage.getItem("token");
+
+        await fetch(`${API_URL}/training/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(apiPayload)
+        });
+
+    } catch (err) {
+        console.error("Submission failed:", err);
+        // ถึง error ก็ยังให้ไปหน้า summary
+    }
+
+    // ✅ ยิงเสร็จแล้วค่อยเปลี่ยนหน้า
+    router.push(`/cbt/${area}/${typeid}/summary`);
+};
+
+
+    /** * ฟังก์ชันสำหรับยกเลิกภารกิจกลางคัน 
+     * เคลียร์ข้อมูลและกลับหน้า Dashboard ทันที 
+     */
+    const abortMission = async () => {
+        const resultAlert = await Swal.fire({
+            title: 'ABORT MISSION?',
+            text: "Current progress will be permanently deleted.",
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'EXIT TO DASHBOARD',
+            background: '#0a0a0a',
+            color: '#fff',
+            customClass: {
+                popup: 'rounded-[2.5rem] border border-white/10 italic font-sans'
+            }
+        });
+
+        if (resultAlert.isConfirmed) {
+            clearGameSession(); // เคลียร์ session_result
+            router.push("/pages/dashboard");
+        }
     };
 
     const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
     return (
-        <div className="flex flex-col h-screen w-screen bg-[#050505] text-white italic tracking-tighter font-sans overflow-hidden">
+        <div className="flex flex-col h-screen w-screen bg-[#050505] text-white  tracking-tighter font-sans overflow-hidden">
             <div className="flex-1 flex overflow-hidden p-2">
                 <div className="flex-1 flex items-center justify-center relative bg-[#0a0a0a] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
                     <div className="flex w-full h-full p-1 gap-1">
@@ -296,8 +401,8 @@ export default function Page() {
                     </div>
                 </div>
 
-                <div className="w-[360px] bg-[#111] m-2 rounded-[2.5rem] flex flex-col gap-6 border border-white/10 p-6 shadow-2xl">
-                    <h2 className="text-xs font-black text-red-600 uppercase tracking-widest text-center italic">Threat Classification</h2>
+                <div className="w-[200px] bg-[#111] m-2 rounded-[2.5rem] flex flex-col gap-6 border border-white/10 p-6 shadow-2xl">
+                    <h2 className="text-xs font-black text-red-600 uppercase tracking-widest text-center ">Threat Classification</h2>
 
                     <select
                         className="w-full bg-black border-2 border-white/10 p-3 rounded-2xl text-sm font-black h-[400px] outline-none"
@@ -310,7 +415,7 @@ export default function Page() {
                         ))}
                     </select>
 
-                    <button onClick={checkAnswer} className="w-full p-6 bg-red-600 hover:bg-red-700 text-2xl font-black italic transform hover:skew-x-2 transition-all active:scale-95 shadow-lg shadow-red-600/20 uppercase">
+                    <button onClick={checkAnswer} className="w-full p-6 bg-red-600 hover:bg-red-700 text-2xl font-black  transform hover:skew-x-2 transition-all active:scale-95 shadow-lg shadow-red-600/20 uppercase">
                         Confirm
                     </button>
 
@@ -328,8 +433,11 @@ export default function Page() {
                 </div>
                 <div className="h-12 w-[2px] bg-white/10"></div>
                 <div className="text-center min-w-[200px]">
-                    <span className="text-[10px] text-red-600 uppercase font-black tracking-widest italic">Operator Identity</span>
-                    <p className="text-2xl font-black uppercase text-white/90">{user?.fname} {user?.lname}</p>
+                    <span className="text-[10px] text-red-600 uppercase font-black tracking-widest ">Operator Identity</span>
+                    {/* ✅ แสดงชื่อจาก State operatorName */}
+                    <p className="text-lg font-black uppercase text-white/90 truncate w-full">
+                        {operatorName}
+                    </p>
                 </div>
                 <div className="h-12 w-[2px] bg-white/10"></div>
                 <div className="flex gap-12 text-center">

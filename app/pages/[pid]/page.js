@@ -6,6 +6,7 @@ import ItemRegistoration from "@/app/components/ItemRegistoration";
 import SelectionPage from "@/app/components/SelectionPage";
 import BaggageImageGallery from "@/app/components/BaggageImageGallery";
 import AreaGallerySelection from "@/app/components/AreaGallerySelection";
+import CorrectiveList from "@/app/components/CorrectiveList";
 
 export default function DynamicPage() {
   const { pid } = useParams();
@@ -21,10 +22,14 @@ export default function DynamicPage() {
         return <ItemRegistoration />
       case 'selection':
         return <SelectionPage />
+         case 'selection':
+        return <SelectionPage />
       case 'gallery':
         return <AreaGallerySelection />
         case 'baggagegallery':
         return <BaggageImageGallery />
+        case 'CorrectiveList':
+        return <CorrectiveList />
       default:
         return (
           <div className="p-1 text-center text-slate-500  overflow-hidden">
