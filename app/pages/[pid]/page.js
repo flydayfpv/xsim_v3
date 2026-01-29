@@ -6,7 +6,7 @@ import ItemRegistoration from "@/app/components/ItemRegistoration";
 import SelectionPage from "@/app/components/SelectionPage";
 import BaggageImageGallery from "@/app/components/BaggageImageGallery";
 import AreaGallerySelection from "@/app/components/AreaGallerySelection";
-import CorrectiveList from "@/app/components/CorrectiveList";
+import CorrectiveList from "@/app/components/CorrectiveLogs";
 import YearlyForensicLog from "@/app/components/YearlyForensicLog";
 import CorrectiveForm from "@/app/components/CorrectiveForm";
 

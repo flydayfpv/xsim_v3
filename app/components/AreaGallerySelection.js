@@ -55,8 +55,8 @@ export default function AreaGallerySelection() {
     <div className="min-h-screen w-full bg-[#020202]/90 text-white p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden font-sans">
       
       {/* Dynamic Background Orbs */}
-      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-red-600/10 blur-[150px] rounded-full"></div>
-      <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[150px] rounded-full"></div>
+      <div className="absolute top-[-15%] left-[-10%] w-125 h-125 bg-red-600/10 blur-[150px] rounded-full"></div>
+      <div className="absolute bottom-[-15%] right-[-10%] w-125 h-125 bg-blue-600/10 blur-[150px] rounded-full"></div>
 
       {/* Header */}
       <div className="relative z-10 text-center mb-20 animate-in fade-in slide-in-from-top-10 duration-1000">
@@ -67,11 +67,11 @@ export default function AreaGallerySelection() {
             </h1>
         </div>
         <div className="flex items-center justify-center gap-3">
-            <div className="h-[1px] w-12 bg-gray-800"></div>
+            <div className="h-px w-12 bg-gray-800"></div>
             <p className="text-gray-500 text-xs md:text-sm tracking-[0.5em] font-bold uppercase">
                 Select Operational Sector
             </p>
-            <div className="h-[1px] w-12 bg-gray-800"></div>
+            <div className="h-px w-12 bg-gray-800"></div>
         </div>
       </div>
 
@@ -87,13 +87,13 @@ export default function AreaGallerySelection() {
                 key={area.id}
                 onClick={() => router.push(`/pages/baggagegallery?areaID=${area.id}`)}
                 style={{ animationDelay: `${index * 150}ms` }}
-                className={`group relative bg-white/[0.03] backdrop-blur-3xl border border-white/5 p-12 rounded-[3.5rem] cursor-pointer transition-all duration-700 hover:-translate-y-3 hover:bg-white/[0.07] hover:border-white/20 animate-in fade-in zoom-in ${config.shadow} hover:shadow-2xl z-10 hover:z-20`}
+                className={`group relative bg-white/3 backdrop-blur-3xl border border-white/5 p-12 rounded-[3.5rem] cursor-pointer transition-all duration-700 hover:-translate-y-3 hover:bg-white/[0.07] hover:border-white/20 animate-in fade-in zoom-in ${config.shadow} hover:shadow-2xl z-10 hover:z-20`}
                 >
                 {/* 2D Glass Reflection Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent rounded-[3.5rem] pointer-events-none"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent rounded-[3.5rem] pointer-events-none"></div>
 
                 {/* Icon Container */}
-                <div className={`mb-10 p-6 inline-block rounded-3xl bg-gradient-to-br ${config.color} text-white shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
+                <div className={`mb-10 p-6 inline-block rounded-3xl bg-linear-to-br ${config.color} text-white shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
                     <Icon size={44} />
                 </div>
 
@@ -113,7 +113,7 @@ export default function AreaGallerySelection() {
                 </div>
 
                 {/* Vertical Decorative Accent */}
-                <div className={`absolute top-1/2 -translate-y-1/2 left-0 h-24 w-1.5 bg-gradient-to-b ${config.color} rounded-r-full opacity-0 group-hover:opacity-100 transition-all duration-500 shadow-[0_0_15px_rgba(255,255,255,0.2)]`}></div>
+                <div className={`absolute top-1/2 -translate-y-1/2 left-0 h-24 w-1.5 bg-linear-to-b ${config.color} rounded-r-full opacity-0 group-hover:opacity-100 transition-all duration-500 shadow-[0_0_15px_rgba(255,255,255,0.2)]`}></div>
                 </div>
             );
             })}
@@ -127,7 +127,7 @@ export default function AreaGallerySelection() {
 
       {/* Footer System Info */}
       <div className="mt-24 relative z-10 flex flex-col items-center gap-4">
-        <div className="h-[1px] w-32 bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+        <div className="h-px32 bg-linear-to-r from-transparent via-gray-800 to-transparent"></div>
         <div className="flex gap-8 text-[10px] tracking-[0.4em] font-bold text-gray-500 uppercase">
             <span>Security Status: Optimal</span>
             <span className="text-red-900">•</span>

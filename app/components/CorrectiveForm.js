@@ -146,20 +146,20 @@ const CorrectiveForm = () => {
 
     return (
         <div className="min-h-screen w-full bg-[#0a0a0a]/90 flex flex-col items-center justify-center p-4 font-mono">
-            <div className="w-full max-w-4xl p-6 m-6 bg-[#111111] border border-[#333333] rounded shadow-2xl overflow-hidden relative">
+            <div className="w-full p-6 m-6 bg-[#111111] border border-[#333333] rounded shadow-2xl overflow-hidden relative">
                 
                 <div className="bg-orange-600 px-4 py-2 flex justify-between items-center border-b border-orange-700">
-                    <h2 className="text-black font-black text-sm tracking-tighter uppercase">Terminal System // Corrective Action v3</h2>
-                    <span className="bg-black text-orange-500 text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">SYSTEM_ACTIVE</span>
+                    <h2 className="text-black font-black text-xl tracking-tighter uppercase">Terminal System // Corrective Action v3</h2>
+                    <span className="bg-black text-orange-500 text-[18px] px-2 py-0.5 rounded font-bold animate-pulse">SYSTEM_ACTIVE</span>
                 </div>
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
                     <div className="md:col-span-4 space-y-4 border-r border-[#222222] pr-6">
                         <div className="bg-[#1a1a1a] p-4 border-t-2 border-orange-500 shadow-inner">
-                            <label className="text-[10px] text-orange-500 font-bold uppercase mb-2 block">Operator Auth ID</label>
+                            <label className="text-[18px] text-orange-500 font-bold uppercase mb-2 block">Operator Auth ID</label>
                             <input
                                 type="text"
-                                className="w-full bg-black border border-[#333333] p-2 text-cyan-400 outline-none focus:border-cyan-500 transition-all mb-3 text-sm"
+                                className="w-full bg-black border border-[#333333] p-2 text-cyan-400 outline-none focus:border-cyan-500 transition-all mb-3 text-xl"
                                 placeholder="EMID_INPUT"
                                 value={searchEmid}
                                 onChange={(e) => setSearchEmid(e.target.value)}
@@ -168,10 +168,10 @@ const CorrectiveForm = () => {
                             <button onClick={handleUserSearch} className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-2 text-xs transition-colors uppercase">Verify_Operator</button>
                         </div>
                         {userData && (
-                            <div className="bg-cyan-950/20 border border-cyan-500/30 p-3 rounded text-[11px]">
+                            <div className="bg-cyan-950/20 border border-cyan-500/30 p-3 rounded text-[16px]">
                                 <div className="text-cyan-500 font-bold mb-1 underline uppercase italic">Verified:</div>
                                 <div className="text-white font-bold">{userData.name}</div>
-                                <button onClick={() => { setUserData(null); setSearchEmid(''); setFormData({ ...formData, userId: '' }) }} className="mt-2 text-red-500 hover:text-red-400 text-[10px] uppercase font-bold">[ Terminate ]</button>
+                                <button onClick={() => { setUserData(null); setSearchEmid(''); setFormData({ ...formData, userId: '' }) }} className="mt-2 text-red-500 hover:text-red-400 text-[18px] uppercase font-bold">[ Terminate ]</button>
                             </div>
                         )}
                     </div>
@@ -179,22 +179,22 @@ const CorrectiveForm = () => {
                     <form onSubmit={handleSubmit} className="md:col-span-8 space-y-4">
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <label className="text-[10px] text-slate-500 font-bold uppercase">Area</label>
-                                <select required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-[11px] outline-none focus:border-orange-500" value={formData.areaId} onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}>
+                                <label className="text-[18px] text-slate-500 font-bold uppercase">Area</label>
+                                <select required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-[16px] outline-none focus:border-orange-500" value={formData.areaId} onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}>
                                     <option value="">-- SELECT --</option>
                                     {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] text-slate-500 font-bold uppercase">Mode</label>
-                                <select required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-[11px] outline-none focus:border-orange-500" value={formData.correctiveTypeId} onChange={(e) => setFormData({ ...formData, correctiveTypeId: e.target.value })}>
+                                <label className="text-[18px] text-slate-500 font-bold uppercase">Mode</label>
+                                <select required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-[16px] outline-none focus:border-orange-500" value={formData.correctiveTypeId} onChange={(e) => setFormData({ ...formData, correctiveTypeId: e.target.value })}>
                                     <option value="">-- SELECT --</option>
                                     {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] text-slate-500 font-bold uppercase">Item</label>
-                                <select required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-[11px] outline-none focus:border-orange-500" value={formData.itemCategory} onChange={(e) => setFormData({ ...formData, itemCategory: e.target.value })}>
+                                <label className="text-[18px] text-slate-500 font-bold uppercase">Item</label>
+                                <select required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-[16px] outline-none focus:border-orange-500" value={formData.itemCategory} onChange={(e) => setFormData({ ...formData, itemCategory: e.target.value })}>
                                     <option value="">-- SELECT --</option>
                                     <option value="77">  ALL </option>
                                     {filteredItems.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -203,19 +203,19 @@ const CorrectiveForm = () => {
                         </div>
 
                         <div>
-                            <label className="text-[10px] text-slate-500 font-bold uppercase block">Time_Target (Sec)</label>
+                            <label className="text-[18px] text-slate-500 font-bold uppercase block">Time_Target (Sec)</label>
                             <input type="number" required className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-orange-500 font-bold outline-none focus:border-orange-500" value={formData.timeTarget} onChange={(e) => setFormData({ ...formData, timeTarget: e.target.value })} />
                         </div>
 
                         <div>
-                            <label className="text-[10px] text-slate-500 font-bold uppercase block">Protocol_Remark</label>
-                            <textarea className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-sm outline-none focus:border-orange-500 resize-none" rows="3" value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} />
+                            <label className="text-[18px] text-slate-500 font-bold uppercase block">Protocol_Remark</label>
+                            <textarea className="w-full bg-[#1a1a1a] border border-[#333333] p-2 text-white text-xl outline-none focus:border-orange-500 resize-none" rows="3" value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} />
                         </div>
 
                         <button 
                             type="submit" 
                             disabled={!formData.userId}
-                            className={`w-full py-4 text-sm font-black tracking-widest uppercase transition-all shadow-lg ${formData.userId
+                            className={`w-full py-4 text-xl font-black tracking-widest uppercase transition-all shadow-lg ${formData.userId
                                     ? 'bg-orange-600 hover:bg-orange-500 text-black border-b-4 border-orange-800 active:border-0 active:translate-y-1'
                                     : 'bg-[#222222] text-slate-600 border-b-4 border-black cursor-not-allowed grayscale'
                                 }`}
