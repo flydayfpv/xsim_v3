@@ -1,22 +1,23 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { 
-  Loader2, 
-  ShieldAlert, 
-  Target, 
-  AlertCircle, 
-  Zap, 
-  Activity, 
-  Clock, 
-  Award, 
-  User, 
-  MapPin, 
-  TrendingUp, 
+import {
+  Loader2,
+  ShieldAlert,
+  Target,
+  AlertCircle,
+  Zap,
+  Activity,
+  Clock,
+  Award,
+  User,
+  MapPin,
+  TrendingUp,
   CheckCircle2,
   AlertTriangle, // ✅ Added missing import
   ChevronRight   // ✅ Added missing import
 } from 'lucide-react';
 import { getOperatorProfile } from '../lib/auth';
+  import OperatorRadarChart from './OperatorRadarChart';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3015";
 
@@ -26,7 +27,6 @@ const UserYearCBT = () => {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const currentYear = new Date().getFullYear();
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -114,16 +114,16 @@ const UserYearCBT = () => {
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 gap-4">
       <Loader2 className="animate-spin text-red-600" size={40} />
-      <span className="text-[14px] font-black uppercase  text-red-600 animate-pulse">Establishing Secure Link...</span>
+      <span className="text-2xl font-black uppercase  text-red-600 animate-pulse">Establishing Secure Link...</span>
     </div>
   );
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-in fade-in duration-700">
-      
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-in fade-in duration-700 overflow-auto">
+
       {/* --- LEFT: MAIN STATISTICS --- */}
       <div className="xl:col-span-8 space-y-6">
-        
+
         {/* Profile Card */}
         <div className="bg-linear-to-r from-red-900/20 to-transparent border border-white/10 p-6 rounded-[2.5rem] backdrop-blur-md flex items-center gap-6">
           <div className="relative">
@@ -133,11 +133,11 @@ const UserYearCBT = () => {
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-4 border-[#050505] rounded-full" />
           </div>
           <div>
-            <p className="text-[14px] text-red-500 font-black uppercase  mb-1">เจ้าหน้าที่ปฏิบัติการ (Active Duty)</p>
+            <p className="text-2xl text-red-500 font-black uppercase  mb-1">เจ้าหน้าที่ปฏิบัติการ (Active Duty)</p>
             <h2 className="text-2xl font-black text-white uppercase ">{userProfile?.prefix}{userProfile?.firstName} {userProfile?.lastName}</h2>
             <div className="flex items-center gap-2 text-gray-500 mt-1">
               <MapPin size={12} />
-              <span className="text-[14px] font-bold uppercase  leading-none">{userProfile?.division}</span>
+              <span className="text-2xl font-bold uppercase  leading-none">{userProfile?.division}</span>
             </div>
           </div>
         </div>
@@ -151,12 +151,12 @@ const UserYearCBT = () => {
         {/* Capability Profile Map */}
         <div className="bg-white/2 border border-white/5 rounded-[2.5rem] p-8">
           <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
-            <h3 className="text-lg font-black uppercase  text-white/60 flex items-center gap-2">
+            <h3 className="text-3xl font-black uppercase  text-white/60 flex items-center gap-2">
               <Activity size={14} className="text-red-600" /> แผนผังประเมินสมรรถนะรายหมวดหมู่
             </h3>
-            <span className="text-[14px] font-mono text-gray-600 uppercase">FY {currentYear}</span>
+            <span className="text-2xl font-mono text-gray-600 uppercase">FY {currentYear}</span>
           </div>
-          
+
           <div className="grid gap-8">
             {data.map((item, idx) => {
               const theme = getCategoryTheme(item.accuracy);
@@ -164,15 +164,15 @@ const UserYearCBT = () => {
                 <div key={idx} className="group relative">
                   <div className="flex items-center justify-between mb-3">
                     <div className="space-y-1">
-                      <span className="text-sm font-black uppercase text-white/90 group-hover:text-red-500 transition-colors">{item.name}</span>
-                      <p className="text-[12px] font-bold text-gray-600 uppercase ">ประเมิน: <span className={theme.color}>{theme.label} ({theme.note})</span></p>
+                      <span className="text-2xl font-black uppercase text-white/90 group-hover:text-red-500 transition-colors">{item.name}</span>
+                      <p className="text--2xl font-bold text-gray-600 uppercase ">ประเมิน: <span className={theme.color}>{theme.label} ({theme.note})</span></p>
                     </div>
                     <div className="text-right">
                       <span className={`text-2xl font-black ${theme.color}`}>{item.accuracy.toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="relative h-2.5 w-full bg-white/5 rounded-full border border-white/10 p-px overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full transition-all duration-1000 ${theme.bar} ${item.accuracy > 80 ? 'shadow-[0_0_15px_rgba(37,99,235,0.4)]' : ''}`}
                       style={{ width: `${item.accuracy}%` }}
                     />
@@ -191,15 +191,15 @@ const UserYearCBT = () => {
             <div className={`p-2 rounded-lg ${guide.bg} border border-white/10`}>
               <Activity className={`${guide.color} animate-pulse`} size={20} />
             </div>
-            <h3 className={`text-sm font-black uppercase  ${guide.color}`}>สถานะ: {guide.status}</h3>
+            <h3 className={`text-2xl font-black uppercase  ${guide.color}`}>สถานะ: {guide.status}</h3>
           </div>
           <div className="space-y-6">
-            <p className="text-white/80 text-sm font-bold leading-relaxed">
-              ภาพรวมประสิทธิภาพในปี {currentYear} ของคุณ <span className={guide.color}>{totals.avgHitsRate}%</span> 
+            <p className="text-white/80 text-2xl font-bold leading-relaxed">
+              ภาพรวมประสิทธิภาพในปี {currentYear} ของคุณ <span className={guide.color}>{totals.avgHitsRate}%</span>
               จัดอยู่ในเกณฑ์ <span className="underline decoration-red-600 underline-offset-4">{guide.status}</span> ตามมาตรฐาน
             </p>
             <div className="space-y-4">
-              <p className="text-[14px] text-gray-500 uppercase font-black  border-l-2 border-red-600 pl-3">คำแนะนำ (Directives):</p>
+              <p className="text-2xl text-gray-500 uppercase font-black  border-l-2 border-red-600 pl-3">คำแนะนำ (Directives):</p>
               <div className="grid gap-3">
                 {guide.tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-3 group">
@@ -214,13 +214,23 @@ const UserYearCBT = () => {
 
         {/* Global Stats Summary */}
         <div className="bg-white/5 border border-white/5 p-8 rounded-[3rem] space-y-6 backdrop-blur-md">
-          <h4 className="text-[14px] text-gray-500 uppercase font-black  border-b border-white/10 pb-4 flex items-center gap-2">
+          <h4 className="text-2xl text-gray-500 uppercase font-black  border-b border-white/10 pb-4 flex items-center gap-2">
             <TrendingUp size={14} /> Operational Summary
           </h4>
-          <MetricItem label="ความแม่นยำเฉลี่ย" value={`${totals.avgHitsRate}%`} icon={<Target size={14}/>} color={guide.color} />
-          <MetricItem label="เวลาสะสม" value={`${totals.timeUsed} นาที`} icon={<Clock size={14}/>} />
-          <MetricItem label="ระดับความเสี่ยง" value={totals.avgHitsRate < 50 ? "สูงมาก" : "ปกติ"} icon={<AlertTriangle size={14}/>} color={totals.avgHitsRate < 50 ? "text-red-500" : "text-green-500"} />
+          <MetricItem label="ความแม่นยำเฉลี่ย" value={`${totals.avgHitsRate}%`} icon={<Target size={14} />} color={guide.color} />
+          <MetricItem label="เวลาสะสม" value={`${totals.timeUsed} นาที`} icon={<Clock size={14} />} />
+          <MetricItem label="ระดับความเสี่ยง" value={totals.avgHitsRate < 50 ? "สูงมาก" : "ปกติ"} icon={<AlertTriangle size={14} />} color={totals.avgHitsRate < 50 ? "text-red-500" : "text-green-500"} />
         </div>
+
+        <div className="bg-[#111] p-8 rounded-[3rem] border border-white/10 shadow-2xl">
+          <h3 className="text-2xl font-black text-red-600 uppercase tracking-widest mb-6 border-b border-white/5 pb-4">
+            360° Proficiency Analysis
+          </h3>
+          <div className="h-80">
+            <OperatorRadarChart />
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -231,10 +241,10 @@ const UserYearCBT = () => {
 const StatBox = ({ label, value, unit, icon, color }) => (
   <div className="group bg-white/3 border border-white/10 p-6 rounded-4xl flex items-center justify-between overflow-hidden relative transition-all hover:bg-white/5">
     <div className="relative z-10">
-      <p className="text-[14px] text-gray-500 uppercase font-black mb-1">{label}</p>
+      <p className="text-2xl text-gray-500 uppercase font-black mb-1">{label}</p>
       <p className={`text-5xl font-black ${color}`}>
         {value}
-        <small className="text-sm ml-1 text-gray-500 font-bold uppercase">{unit}</small>
+        <small className="text-2xl ml-1 text-gray-500 font-bold uppercase">{unit}</small>
       </p>
     </div>
     <div className="text-white/2 absolute -right-3.5 -bottom-3.5 transition-all group-hover:scale-110 group-hover:text-white/5">
@@ -247,9 +257,9 @@ const MetricItem = ({ label, value, icon, color = "text-white" }) => (
   <div className="flex items-center justify-between group cursor-default">
     <div className="flex items-center gap-3">
       <div className="text-gray-600 group-hover:text-red-500 transition-colors">{icon}</div>
-      <span className="text-[11px] font-bold text-gray-400 uppercase ">{label}</span>
+      <span className="text-[16px] font-bold text-gray-400 uppercase ">{label}</span>
     </div>
-    <span className={`text-sm font-black ${color}`}>{value}</span>
+    <span className={`text-2xl font-black ${color}`}>{value}</span>
   </div>
 );
 

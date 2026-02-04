@@ -192,55 +192,73 @@ export default function Page() {
         if (isFinished) return;
         setIsFinished(true);
 
-        // 1. Stop animations immediately
+        // 1. หยุดการทำงานของ Canvas และ Animation ทั้งหมด
         leftCanvasRef.current?.stop();
         rightCanvasRef.current?.stop();
 
-        // 2. Prepare the result object
+        // 2. คำนวณค่าทางสถิติ
         const finalEfficiency = ((hits / (hits + fars + 0.000001)) * 100).toFixed(0);
+        const totalSecondsUsed = (courseTime * 60) - timeLeft;
 
+        // 3. เตรียมข้อมูล Summary (สำหรับใช้ในเครื่องและส่ง API)
         const summary = {
             score: score,
             hits: hits,
             fars: fars,
-            efficiency: finalEfficiency,
-            timeUsed: (courseTime * 60) - timeLeft, // Calculate how many seconds were used
-            categoryStats: categoryStats, // Note: We save as object for localStorage, stringify for API
-            wrongAnswers: wrongAnswers,   // Note: We save as object for localStorage, stringify for API
+            efficiency: finalEfficiency, // ส่งเป็น String "80"
+            timeUsed: totalSecondsUsed,
+            categoryStats: categoryStats,
+            wrongAnswers: wrongAnswers,
             userId: user?.id,
             operatorName: operatorName
         };
 
-        // 3. 🚀 SAVE TO LOCAL STORAGE (This is what the Summary page needs)
+        // 4. บันทึกลง LocalStorage เพื่อให้หน้า Summary นำไปแสดงผลต่อได้ทันที
         localStorage.setItem("session_result", JSON.stringify(summary));
 
-        // 4. Save to Database API
+        // 5. ส่งข้อมูลไปยัง Backend API
         try {
-            await fetch(`${API_URL}/training/save`, {
+            const response = await fetch(`${API_URL}/training/save`, {
                 method: 'POST',
-                header: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
-                    ...summary,
-                    categoryStats: JSON.stringify(categoryStats), // API expects strings
-                    wrongAnswers: JSON.stringify(wrongAnswers)     // API expects strings
+                    userId: user?.id,
+                    score: score,
+                    hits: hits,
+                    fars: fars,
+                    efficiency: finalEfficiency,
+                    timeUsed: totalSecondsUsed,
+                    // ส่งเป็น Object ไปเลย เพราะ Backend มี JSON.stringify รออยู่แล้ว
+                    categoryStats: categoryStats,
+                    wrongAnswers: wrongAnswers,
+                    operatorName: operatorName
                 })
             });
+
+            const result = await response.json();
+            if (!result.success) {
+                console.error("Server saved with error:", result.error);
+            }
         } catch (e) {
-            console.error("API Save Failed:", e);
+            console.error("Network Error - API Save Failed:", e);
         }
 
-        // 5. Navigate to Summary
+        // 6. แสดงผลแจ้งเตือนและย้ายหน้า
         Swal.fire({
             title: "SESSION COMPLETE",
             text: `Analysis Finished. Final Score: ${score}`,
             icon: "success",
             background: '#111',
             color: '#fff',
-            confirmButtonColor: '#dc2626'
+            confirmButtonColor: '#dc2626',
+            allowOutsideClick: false
         }).then(() => {
             router.push(`/cbt/${area}/${typeid}/summary`);
         });
-    }, [score, hits, fars, categoryStats, wrongAnswers, user, area, typeid, timeLeft, isFinished, operatorName]);
+
+    }, [score, hits, fars, categoryStats, wrongAnswers, user, area, typeid, timeLeft, isFinished, operatorName, router]);
 
     // Handle Missed (ภาพพ้นจอ)
     const handleMissedImage = useCallback(() => {

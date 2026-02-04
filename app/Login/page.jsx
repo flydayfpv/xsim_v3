@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [changePasswordLoading, setChangePasswordLoading] = useState(false);
   const [changePasswordError, setChangePasswordError] = useState("");
 
-  // Validation Logic: 8+ characters, letters and numbers
   const validatePassword = (pass) => {
     const hasLetter = /[a-zA-Z]/.test(pass);
     const hasNumber = /[0-9]/.test(pass);
@@ -46,17 +45,14 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed");
       }
 
-      // ✅ FLOW: Check if password is default "123456"
       if (password === "123456") {
-        setTempUserData(data); // Store tokens temporarily
-        setShowChangePassword(true); // Open Modal
+        setTempUserData(data);
+        setShowChangePassword(true);
         setLoading(false);
-        return; // 🛑 Stop and wait for password change
+        return;
       }
 
-      // ✅ FLOW: Correct & Not default -> Dashboard
       saveSessionAndRedirect(data);
-
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -68,12 +64,12 @@ export default function LoginPage() {
     setChangePasswordError("");
 
     if (newPassword !== confirmPassword) {
-      setChangePasswordError("Passwords do not match.");
+      setChangePasswordError("Passwords do not match / รหัสผ่านไม่ตรงกัน");
       return;
     }
 
     if (!validatePassword(newPassword)) {
-      setChangePasswordError("Password must be 8+ characters with letters and numbers.");
+      setChangePasswordError("8+ characters with letters & numbers / ต้องมี 8 ตัวอักษรขึ้นไปรวมตัวเลข");
       return;
     }
 
@@ -81,7 +77,6 @@ export default function LoginPage() {
 
     try {
       const userId = tempUserData.user.id;
-      // PUT to update password via your API
       const res = await fetch(`${API_URL}/users/${userId}`, {
         method: "PUT",
         headers: {
@@ -93,7 +88,6 @@ export default function LoginPage() {
 
       if (!res.ok) throw new Error("Could not update password.");
 
-      // Success -> Finalize login
       saveSessionAndRedirect(tempUserData);
     } catch (err) {
       setChangePasswordError(err.message);
@@ -110,7 +104,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-cover bg-center relative"
+      className="min-h-screen flex items-center justify-center bg-cover bg-center relative font-sans"
       style={{ backgroundImage: "url('images/xsim-bg.png')" }}
     >
       <div className="absolute inset-0 bg-black/60" />
@@ -123,12 +117,14 @@ export default function LoginPage() {
 
         <h1 className="text-xl font-bold text-center text-gray-200">
           Airport Security Training System
+          <span className="block text-sm font-normal opacity-80">ระบบฝึกอบรมการรักษาความปลอดภัยท่าอากาศยาน</span>
         </h1>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-xl font-medium text-gray-200">
+            <label className="block text-lg font-medium text-gray-200">
               Employee ID / Citizen ID
+              <span className="block text-xs font-normal">รหัสพนักงาน / เลขบัตรประชาชน</span>
             </label>
             <input
               type="text"
@@ -140,7 +136,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-xl font-medium text-gray-200">Password</label>
+            <label className="block text-lg font-medium text-gray-200">
+              Password
+              <span className="block text-xs font-normal">รหัสผ่าน</span>
+            </label>
             <input
               type="password"
               value={password}
@@ -155,52 +154,59 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 rounded-md transition disabled:opacity-50"
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 rounded-md transition disabled:opacity-50"
           >
-            {loading ? "AUTHENTICATING..." : "SIGN IN"}
+            {loading ? "AUTHENTICATING..." : "SIGN IN / เข้าสู่ระบบ"}
           </button>
         </form>
       </div>
 
       {/* --- Mandatory Change Password Modal --- */}
       {showChangePassword && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
           
-          <div className="relative z-110 w-full max-w-md rounded-xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-2xl p-8 text-white">
-            <h2 className="text-2xl font-bold text-center text-red-400 mb-2 uppercase italic">
+          <div className="relative z-110 w-full max-w-lg rounded-xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-2xl p-10 text-white">
+            <h2 className="text-3xl font-bold text-center text-red-400 mb-2 uppercase italic">
               Security Update Required
+              <span className="block text-lg font-semibold text-white mt-1">จำเป็นต้องเปลี่ยนรหัสผ่าน</span>
             </h2>
-            <p className="text-center text-gray-200 mb-6 text-sm">
+            
+            <p className="text-center text-gray-200 mb-8 text-xl leading-relaxed">
               You are using a default password. <br/> Please set a new password to continue.
+              <span className="block text-base mt-2 text-gray-300 italic">คุณกำลังใช้รหัสผ่านเริ่มต้น กรุณาตั้งรหัสผ่านใหม่เพื่อเริ่มใช้งาน</span>
             </p>
 
-            <form onSubmit={handleChangePassword} className="space-y-4">
+            <form onSubmit={handleChangePassword} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300">NEW PASSWORD</label>
+                <label className="block text-xl font-semibold text-gray-200">
+                  NEW PASSWORD / รหัสผ่านใหม่
+                </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   placeholder="Min 8 chars (Letter + Number)"
-                  className="mt-1 w-full rounded-md border border-white/30 bg-white/10 px-3 py-2 text-white outline-none"
+                  className="mt-2 w-full rounded-md border border-white/30 bg-white/10 px-4 py-3 text-white text-lg outline-none focus:border-blue-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300">CONFIRM PASSWORD</label>
+                <label className="block text-xl font-semibold text-gray-200">
+                  CONFIRM PASSWORD / ยืนยันรหัสผ่าน
+                </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-md border border-white/30 bg-white/10 px-3 py-2 text-white outline-none"
+                  className="mt-2 w-full rounded-md border border-white/30 bg-white/10 px-4 py-3 text-white text-lg outline-none focus:border-blue-400"
                 />
               </div>
 
               {changePasswordError && (
-                <p className="text-red-400 text-center font-bold text-xs bg-red-900/40 py-2 rounded">
+                <p className="text-red-400 text-center font-bold text-lg bg-red-900/40 py-3 rounded">
                   {changePasswordError}
                 </p>
               )}
@@ -208,9 +214,9 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={changePasswordLoading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-md transition shadow-lg mt-2"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-md transition shadow-lg mt-4 text-xl"
               >
-                {changePasswordLoading ? "SAVING..." : "UPDATE & SIGN IN"}
+                {changePasswordLoading ? "SAVING..." : "UPDATE & SIGN IN / อัปเดตและเข้าสู่ระบบ"}
               </button>
             </form>
           </div>

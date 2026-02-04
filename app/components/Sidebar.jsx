@@ -19,7 +19,7 @@ const MENU_GROUPS = [
         items: [
             { label: "Dashboard", path: "/pages/dashboard", roles: [1, 2, 3], icon: LayoutDashboard },
             { label: "X-Ray Simulator (CBT)", path: "/pages/selection", roles: [1, 2, 3], icon: Scan },
-            { label: "Corrective (CBT)", path: "/pages/CorrectiveList", roles: [1, 2, 3], icon: ShieldCheck },
+            // { label: "Corrective (CBT)", path: "/pages/CorrectiveList", roles: [1, 2, 3], icon: ShieldCheck },  // Disabled for now
             { label: "My Training", path: "/pages/training", roles: [1, 2], icon: GraduationCap },
             { label: "Gallery", path: "/pages/gallery", roles: [1, 2, 3], icon: PlusSquare },
             // ✅ Added User Manual here

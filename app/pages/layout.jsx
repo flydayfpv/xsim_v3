@@ -33,7 +33,7 @@ export default function PagesLayout({ children }) {
                 backgroundImage: "url('../images/pageBG.png')",
             }}
         >      <Sidebar user={user} setUser={setUser} />
-            <main className="flex-1 p-1 overflow-hidden">
+            <main className="flex-1 p-1 overflow-auto">
                 {children}
             </main>
         </div>
