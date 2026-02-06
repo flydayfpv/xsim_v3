@@ -8,7 +8,7 @@ const ICON_CHAR = "🔍";
 const canvasSize = { width: 850, height: 980 };
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const courseTime = 1; // minutes
-const speed = 2.5; // ปรับความเร็วสายพานตามความเหมาะสม
+const speed = 3; // ปรับความเร็วสายพานตามความเหมาะสม
 
 // --------------------------- Canvas Class ---------------------------
 class _Canvas {
@@ -121,7 +121,37 @@ class _Canvas {
     applyBlackAndWhite() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { const avg = (data[i] + data[i + 1] + data[i + 2]) / 3; data[i] = data[i + 1] = data[i + 2] = avg; } this.ctx.putImageData(imgData, 0, 0); }
     organicStrip() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { const r = data[i], g = data[i + 1], b = data[i + 2]; const isO = r > 110 && g > 50 && g < 220 && b < 160 && r > g && g > b; if (isO) { const avg = (r + g + b) / 3; data[i] = data[i + 1] = data[i + 2] = avg; } } this.ctx.putImageData(imgData, 0, 0); }
     organicOnly() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { const r = data[i], g = data[i + 1], b = data[i + 2]; const isD = b > 30 && b > r && b > g - 20; const isL = b > 150 && g > 130 && r < 210; if (isD || isL) { const avg = (r + g + b) / 3; data[i] = data[i + 1] = data[i + 2] = avg; } } this.ctx.putImageData(imgData, 0, 0); }
-    superEnhance() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; const w = imgData.width, h = imgData.height; const copy = new Uint8ClampedArray(data); const gG = (x, y) => { if (x < 0 || x >= w || y < 0 || y >= h) return 0; const i = (y * w + x) * 4; return 0.299 * copy[i] + 0.587 * copy[i + 1] + 0.114 * copy[i + 2]; }; for (let y = 0; y < h; y++) { for (let x = 0; x < w; x++) { const gx = -1 * gG(x - 1, y - 1) + 1 * gG(x + 1, y - 1) - 2 * gG(x - 1, y) + 2 * gG(x + 1, y) - 1 * gG(x - 1, y + 1) + 1 * gG(x + 1, y + 1); const gy = -1 * gG(x - 1, y - 1) - 2 * gG(x, y - 1) - 1 * gG(x + 1, y - 1) + 1 * gG(x - 1, y + 1) + 2 * gG(x, y + 1) + 1 * gG(x + 1, y + 1); const e = Math.sqrt(gx * gx + gy * gy) * 1.5; const i = (y * w + x) * 4; data[i] = Math.min(255, (copy[i] * 1.1) + e - 10); data[i + 1] = Math.min(255, (copy[i + 1] * 1.1) + e - 10); data[i + 2] = Math.min(255, (copy[i + 2] * 1.1) + e - 10); } } this.ctx.putImageData(imgData, 0, 0); }
+    superEnhance() {
+        if (!this.originalImage) return;
+        this.redraw();
+
+        const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        const data = imgData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // คำนวณความสว่างรวม (density approx)
+            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+
+            if (luminance > 140) {
+                // วัตถุหนาแน่นสูง → ทำให้สว่างและเด่นขึ้น
+                data[i] = Math.min(255, r * 1.15);
+                data[i + 1] = Math.min(255, g * 1.15);
+                data[i + 2] = Math.min(255, b * 1.15);
+            } else {
+                // วัตถุความหนาแน่นต่ำ → ทำให้เข้มลง
+                data[i] *= 0.75;
+                data[i + 1] *= 0.75;
+                data[i + 2] *= 0.75;
+            }
+        }
+
+        this.ctx.putImageData(imgData, 0, 0);
+    }
+
 }
 
 export default function Page() {
