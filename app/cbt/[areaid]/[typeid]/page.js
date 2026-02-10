@@ -8,7 +8,7 @@ const ICON_CHAR = "🔍";
 const canvasSize = { width: 850, height: 980 };
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const courseTime = 1; // minutes
-const speed = 3; // ปรับความเร็วสายพานตามความเหมาะสม
+const speed = 3; 
 
 // --------------------------- Canvas Class ---------------------------
 class _Canvas {
@@ -67,7 +67,6 @@ class _Canvas {
         if (!this.originalImage) return;
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
-        // เริ่มต้นที่ขอบซ้ายสุด (ติดลบเท่ากับความกว้างภาพ)
         this.imageX = -this.originalImage.width;
         this.isPaused = false;
 
@@ -76,13 +75,8 @@ class _Canvas {
                 this.imageX += speed;
                 this.redraw();
             }
-
-            // แก้ไขเงื่อนไขตรงนี้: 
-            // ต้องรอให้ imageX (ขอบซ้ายของภาพ) มากกว่าความกว้างของ Canvas
-            // นั่นหมายความว่าท้ายภาพได้หลุดพ้นขอบขวาไปแล้วจริงๆ
             if (this.imageX > this.canvas.width) {
                 cancelAnimationFrame(this.animationFrameId);
-                // เรียก callback แจ้งว่าภาพหลุดจอ
                 if (this.onAnimationEnd) this.onAnimationEnd();
                 return;
             }
@@ -115,7 +109,7 @@ class _Canvas {
     togglePause() { this.isPaused = !this.isPaused; }
     setIcon(x, y) { this.iconPosition = { x, y }; this.redraw(); }
 
-    // Filters (Brightness, Negative, etc.)
+    // Filters
     applyBrightness() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { data[i] = Math.min(255, data[i] * 1.5); data[i + 1] = Math.min(255, data[i + 1] * 1.5); data[i + 2] = Math.min(255, data[i + 2] * 1.5); } this.ctx.putImageData(imgData, 0, 0); }
     applyNegative() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { data[i] = 255 - data[i]; data[i + 1] = 255 - data[i + 1]; data[i + 2] = 255 - data[i + 2]; } this.ctx.putImageData(imgData, 0, 0); }
     applyBlackAndWhite() { if (!this.originalImage) return; this.redraw(); const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { const avg = (data[i] + data[i + 1] + data[i + 2]) / 3; data[i] = data[i + 1] = data[i + 2] = avg; } this.ctx.putImageData(imgData, 0, 0); }
@@ -124,34 +118,19 @@ class _Canvas {
     superEnhance() {
         if (!this.originalImage) return;
         this.redraw();
-
         const imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         const data = imgData.data;
-
         for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-
-            // คำนวณความสว่างรวม (density approx)
+            const r = data[i], g = data[i + 1], b = data[i + 2];
             const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-
             if (luminance > 140) {
-                // วัตถุหนาแน่นสูง → ทำให้สว่างและเด่นขึ้น
-                data[i] = Math.min(255, r * 1.15);
-                data[i + 1] = Math.min(255, g * 1.15);
-                data[i + 2] = Math.min(255, b * 1.15);
+                data[i] = Math.min(255, r * 1.15); data[i + 1] = Math.min(255, g * 1.15); data[i + 2] = Math.min(255, b * 1.15);
             } else {
-                // วัตถุความหนาแน่นต่ำ → ทำให้เข้มลง
-                data[i] *= 0.75;
-                data[i + 1] *= 0.75;
-                data[i + 2] *= 0.75;
+                data[i] *= 0.75; data[i + 1] *= 0.75; data[i + 2] *= 0.75;
             }
         }
-
         this.ctx.putImageData(imgData, 0, 0);
     }
-
 }
 
 export default function Page() {
@@ -203,10 +182,8 @@ export default function Page() {
                 ]);
                 let cats = await catRes.json();
                 const imgs = await imgRes.json();
-
                 if (area == 2) cats = cats.filter(c => c.id !== 5);
                 else if (area == 3) cats = cats.filter(c => c.id !== 5 && c.id !== 6);
-
                 setCategory(cats);
                 if (cats.length > 0) setSelectedAnswer(cats[0].id.toString());
                 setImageList(Array.isArray(imgs) ? imgs : [imgs]);
@@ -215,127 +192,75 @@ export default function Page() {
         fetchMetadata();
     }, [area, typeid]);
 
-    // Finish Game
-    // Inside your Page() component, replace the finishGame function:
-
     const finishGame = useCallback(async () => {
         if (isFinished) return;
         setIsFinished(true);
 
-        // 1. หยุดการทำงานของ Canvas และ Animation ทั้งหมด
         leftCanvasRef.current?.stop();
         rightCanvasRef.current?.stop();
 
-        // 2. คำนวณค่าทางสถิติ
         const finalEfficiency = ((hits / (hits + fars + 0.000001)) * 100).toFixed(0);
         const totalSecondsUsed = (courseTime * 60) - timeLeft;
 
-        // 3. เตรียมข้อมูล Summary (สำหรับใช้ในเครื่องและส่ง API)
         const summary = {
-            score: score,
-            hits: hits,
-            fars: fars,
-            efficiency: finalEfficiency, // ส่งเป็น String "80"
-            timeUsed: totalSecondsUsed,
-            categoryStats: categoryStats,
-            wrongAnswers: wrongAnswers,
-            userId: user?.id,
-            operatorName: operatorName
+            score, hits, fars, efficiency: finalEfficiency,
+            timeUsed: totalSecondsUsed, categoryStats, wrongAnswers,
+            userId: user?.id, operatorName
         };
 
-        // 4. บันทึกลง LocalStorage เพื่อให้หน้า Summary นำไปแสดงผลต่อได้ทันที
         localStorage.setItem("session_result", JSON.stringify(summary));
 
-        // 5. ส่งข้อมูลไปยัง Backend API
         try {
-            const response = await fetch(`${API_URL}/training/save`, {
+            await fetch(`${API_URL}/training/save`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    userId: user?.id,
-                    score: score,
-                    hits: hits,
-                    fars: fars,
-                    efficiency: finalEfficiency,
-                    timeUsed: totalSecondsUsed,
-                    // ส่งเป็น Object ไปเลย เพราะ Backend มี JSON.stringify รออยู่แล้ว
-                    categoryStats: categoryStats,
-                    wrongAnswers: wrongAnswers,
-                    operatorName: operatorName
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(summary)
             });
+        } catch (e) { console.error("API Save Failed:", e); }
 
-            const result = await response.json();
-            if (!result.success) {
-                console.error("Server saved with error:", result.error);
-            }
-        } catch (e) {
-            console.error("Network Error - API Save Failed:", e);
-        }
-
-        // 6. แสดงผลแจ้งเตือนและย้ายหน้า
         Swal.fire({
             title: "SESSION COMPLETE",
             text: `Analysis Finished. Final Score: ${score}`,
-            icon: "success",
-            background: '#111',
-            color: '#fff',
-            confirmButtonColor: '#dc2626',
-            allowOutsideClick: false
+            icon: "success", background: '#111', color: '#fff', confirmButtonColor: '#dc2626', allowOutsideClick: false
         }).then(() => {
             router.push(`/cbt/${area}/${typeid}/summary`);
         });
-
     }, [score, hits, fars, categoryStats, wrongAnswers, user, area, typeid, timeLeft, isFinished, operatorName, router]);
 
-    // Handle Missed (ภาพพ้นจอ)
+    // 🚀 Update: handleMissedImage stores itemPos
     const handleMissedImage = useCallback(() => {
         if (isFinished) return;
         const currentImage = imageList[imageIndex];
         const correctId = currentImage?.itemCategoryID;
         const correctName = category.find(c => c.id === correctId)?.name || 'Unknown';
+        
+        // Parse coords for storage
+        const coords = typeof currentImage.itemPos === 'string' ? JSON.parse(currentImage.itemPos) : currentImage.itemPos;
 
         setCategoryStats(prev => ({
             ...prev, [correctId]: { hits: (prev[correctId]?.hits || 0), total: (prev[correctId]?.total || 0) + 1 }
         }));
         setFars(f => f + 1);
         setWrongAnswers(prev => [...prev, {
-            baggageId: currentImage.id, code: currentImage.code, correct: correctName, user: "MISSED (FLOW OUT)"
+            baggageId: currentImage.id, 
+            code: currentImage.code, 
+            correct: correctName, 
+            user: "MISSED (FLOW OUT)",
+            targetCoords: coords // 🚀 STORED
         }]);
 
         Swal.fire({ title: "MISSED", text: `Target: ${correctName}`, timer: 700, icon: "warning", showConfirmButton: false, background: '#111', color: '#f87171' });
         nextImage(true);
     }, [imageIndex, imageList, category, isFinished]);
 
-    // Next Image Logic (Looping)
     const nextImage = (wasAnswered = false) => {
-        // 1. ถ้าปล่อยให้ภาพเลื่อนผ่านไปโดยไม่กดตอบ (Timeout/Animation End) ให้เพิ่มค่า Fars
-        if (!wasAnswered) {
-            setFars(f => f + 1);
-        }
-
-        // 2. Reset การควบคุมบน Canvas
+        if (!wasAnswered) setFars(f => f + 1);
         leftCanvasRef.current?.resetZoom();
         rightCanvasRef.current?.resetZoom();
-
-        // 3. Reset สถานะการคลิกและคำตอบ
         setLastClickInside(null);
-        if (category.length > 0) {
-            setSelectedAnswer(category[0].id.toString());
-        }
+        if (category.length > 0) setSelectedAnswer(category[0].id.toString());
 
-        // 4. เปลี่ยนภาพ (Logic การวนกลับไปภาพแรกเมื่อหมด)
-        setImageIndex(prevIndex => {
-            const nextIdx = prevIndex + 1;
-            // ถ้า index ใหม่ เท่ากับหรือมากกว่าจำนวนภาพที่มี ให้กลับไปที่ 0 (ภาพแรก)
-            if (nextIdx >= imageList.length) {
-                console.log("Round complete, restarting from the first image.");
-                return 0;
-            }
-            return nextIdx;
-        });
+        setImageIndex(prevIndex => (prevIndex + 1 >= imageList.length ? 0 : prevIndex + 1));
     };
 
     // Canvas Init
@@ -395,6 +320,7 @@ export default function Page() {
         };
     }, [imageList, imageIndex, isFinished]);
 
+    // 🚀 Update: checkAnswer stores itemPos
     const checkAnswer = () => {
         if (!selectedAnswer || isFinished) return;
         const currentImage = imageList[imageIndex];
@@ -412,8 +338,14 @@ export default function Page() {
         } else {
             setFars(f => f + 1);
             const correctName = category.find(c => c.id === correctId)?.name || 'Unknown';
+            const coords = typeof currentImage.itemPos === 'string' ? JSON.parse(currentImage.itemPos) : currentImage.itemPos;
+            
             setWrongAnswers(prev => [...prev, {
-                baggageId: currentImage.id, code: currentImage.code, correct: correctName, user: category.find(c => c.id === selectedId)?.name || 'WRONG CLICK'
+                baggageId: currentImage.id, 
+                code: currentImage.code, 
+                correct: correctName, 
+                user: category.find(c => c.id === selectedId)?.name || 'WRONG CLICK',
+                targetCoords: coords // 🚀 STORED
             }]);
             Swal.fire({ title: "WRONG", text: `Target: ${correctName}`, timer: 900, icon: "error", showConfirmButton: false, background: '#111', color: '#fff' });
         }
@@ -436,9 +368,7 @@ export default function Page() {
                     <h2 className="text-xs font-black text-red-600 uppercase tracking-widest text-center">Threat Classification</h2>
                     <select
                         className="w-full bg-black border-2 border-white/10 p-3 rounded-2xl text-sm font-black h-96 outline-none"
-                        size="10"
-                        value={selectedAnswer}
-                        onChange={(e) => setSelectedAnswer(e.target.value)}
+                        size="10" value={selectedAnswer} onChange={(e) => setSelectedAnswer(e.target.value)}
                     >
                         {category.map(cat => (
                             <option key={cat.id} value={cat.id} className="p-4 hover:bg-red-600/20 checked:bg-red-600 text-sm mb-1">{cat.name.toUpperCase()}</option>
@@ -465,7 +395,7 @@ export default function Page() {
                     <div><span className="text-[10px] text-gray-400 uppercase font-black">Score</span><p className="text-3xl font-black">{score}</p></div>
                     <div><span className="text-[10px] text-gray-400 uppercase font-black">Efficiency</span><p className="text-3xl font-black text-blue-400">{((hits / (hits + fars + 0.0001)) * 100).toFixed(0)}%</p></div>
                 </div>
-                <button onClick={() => router.push("/dashboard")} className="bg-red-600/10 border border-red-600/20 px-6 py-3 rounded-xl text-xs font-black hover:bg-red-600 uppercase transition-all">Abort Mission</button>
+                <button onClick={() => router.push("/pages/dashboard")} className="bg-red-600/10 border border-red-600/20 px-6 py-3 rounded-xl text-xs font-black hover:bg-red-600 uppercase transition-all">Abort Mission</button>
             </div>
         </div>
     );
