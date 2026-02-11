@@ -1,9 +1,40 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css'; // สำคัญมาก: ต้องนำเข้า CSS ของมัน
 import Swal from 'sweetalert2';
+
+// --- Helper: ตัดภาพตามพิกเซลจริง ---
+const getCroppedImg = async (image, crop) => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width * scaleX;
+    canvas.height = crop.height * scaleY;
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+            resolve(blob);
+        }, 'image/png');
+    });
+};
 
 export default function ItemRegistration() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3015';
+    const imgRef = useRef(null);
     
     const [activeTab, setActiveTab] = useState('top');
     const [categories, setCategories] = useState([]);
@@ -12,35 +43,60 @@ export default function ItemRegistration() {
     const [previews, setPreviews] = useState({ top: '', side: '', realImage: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // X-Sim Custom Swal Helper
+    // --- Crop States ---
+    const [cropModal, setCropModal] = useState({ isOpen: false, src: '', type: '' });
+    const [crop, setCrop] = useState(); // เก็บค่า % ของการ crop
+
     const xSimSwal = Swal.mixin({
         customClass: {
             popup: 'rounded-[2rem] border border-slate-800 bg-slate-950 text-slate-100 shadow-2xl',
             title: 'text-orange-500 font-black italic uppercase tracking-tighter',
-            htmlContainer: 'text-slate-400 font-sans',
-            confirmButton: 'bg-orange-600 hover:bg-orange-500 text-white font-black px-8 py-3 rounded-xl uppercase transition-all outline-none border-0'
+            confirmButton: 'bg-orange-600 hover:bg-orange-500 text-white font-black px-8 py-3 rounded-xl uppercase transition-all'
         },
         buttonsStyling: false,
-        background: '#020617', // slate-950
-        color: '#f1f5f9'
     });
 
     const processFile = useCallback((file, type) => {
         if (file && file.type.startsWith('image/')) {
-            const objectUrl = URL.createObjectURL(file);
-            setFiles(prev => ({ ...prev, [type]: file }));
-            setPreviews(prev => ({ ...prev, [type]: objectUrl }));
+            const reader = new FileReader();
+            reader.addEventListener('load', () => {
+                setCropModal({ isOpen: true, src: reader.result?.toString() || '', type });
+            });
+            reader.readAsDataURL(file);
         }
     }, []);
 
+    const onImageLoad = (e) => {
+        const { width, height } = e.currentTarget;
+        // ตั้งค่า Crop เริ่มต้นให้อยู่กลางภาพ 80%
+        const initialCrop = centerCrop(
+            makeAspectCrop({ unit: '%', width: 80 }, undefined, width, height),
+            width,
+            height
+        );
+        setCrop(initialCrop);
+    };
+
+    const handleSaveCrop = async () => {
+        if (imgRef.current && crop.width && crop.height) {
+            const blob = await getCroppedImg(imgRef.current, crop);
+            const croppedUrl = URL.createObjectURL(blob);
+            const file = new File([blob], `${cropModal.type}.png`, { type: 'image/png' });
+
+            setFiles(prev => ({ ...prev, [cropModal.type]: file }));
+            setPreviews(prev => ({ ...prev, [cropModal.type]: croppedUrl }));
+            setCropModal({ isOpen: false, src: '', type: '' });
+        }
+    };
+
+    // Paste handling
     useEffect(() => {
         const handlePaste = (e) => {
             const items = e.clipboardData?.items;
             if (!items) return;
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf('image') !== -1) {
-                    const blob = items[i].getAsFile();
-                    processFile(blob, activeTab);
+                    processFile(items[i].getAsFile(), activeTab);
                     break;
                 }
             }
@@ -50,39 +106,21 @@ export default function ItemRegistration() {
     }, [activeTab, processFile]);
 
     useEffect(() => {
-        async function loadCategories() {
-            try {
-                const res = await fetch(`${API_URL}/itemCategory/`);
-                const data = await res.json();
-                setCategories(data);
-            } catch (err) { console.error(err); }
-        }
-        loadCategories();
+        fetch(`${API_URL}/itemCategory/`).then(res => res.json()).then(setCategories).catch(console.error);
     }, [API_URL]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!files.top || !files.side || !files.realImage) {
-            xSimSwal.fire({
-                icon: 'warning',
-                title: 'Data Incomplete',
-                text: 'All visual feeds (Top, Side, Real) are required for registry sync.'
-            });
+            xSimSwal.fire({ icon: 'warning', title: 'Data Incomplete', text: 'Please provide all images.' });
             return;
         }
 
         setIsSubmitting(true);
-        xSimSwal.fire({
-            title: 'Synchronizing...',
-            text: 'Uploading visual data to X-SIM Registry',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
+        Swal.fire({ title: 'Synchronizing...', didOpen: () => Swal.showLoading() });
 
         const data = new FormData();
-        data.append('name', formData.name);
-        data.append('itemCategoryId', formData.itemCategoryId);
-        data.append('description', formData.description);
+        Object.keys(formData).forEach(key => data.append(key, formData[key]));
         data.append('top', files.top);
         data.append('side', files.side);
         data.append('realImage', files.realImage);
@@ -90,82 +128,121 @@ export default function ItemRegistration() {
         try {
             const res = await fetch(`${API_URL}/itemImage`, { method: 'POST', body: data });
             if (res.ok) {
-                xSimSwal.fire({
-                    icon: 'success',
-                    title: 'Registry Updated',
-                    text: 'Object successfully committed to the secure database.',
-                    timer: 2500
-                });
+                xSimSwal.fire({ icon: 'success', title: 'Registry Updated' });
                 setFormData({ name: '', itemCategoryId: '', description: '' });
                 setFiles({ top: null, side: null, realImage: null });
                 setPreviews({ top: '', side: '', realImage: '' });
-            } else {
-                throw new Error("Registry link failure.");
             }
-        } catch (err) {
-            xSimSwal.fire({ icon: 'error', title: 'Upload Failed', text: err.message });
-        } finally { setIsSubmitting(false); }
+        } catch (err) { xSimSwal.fire({ icon: 'error', title: 'Error', text: err.message }); }
+        finally { setIsSubmitting(false); }
     };
 
     return (
-        <div className="p-4 max-w-5xl mx-auto bg-slate-950 text-slate-100 font-sans select-none">
+        <div className="p-4 max-w-5xl mx-auto bg-slate-950 text-slate-100 font-sans select-none relative">
+            
+            {/* --- MODAL CROPPER (FIXED INTERACTION) --- */}
+            {cropModal.isOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-6 backdrop-blur-lg">
+                    <div className="w-full max-w-4xl text-center mb-6">
+                        <h2 className="text-orange-500 font-black italic uppercase text-2xl tracking-tighter">Advanced Calibration</h2>
+                        <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em]">Drag corner handles to define object boundaries</p>
+                    </div>
+                    
+                    {/* Container ของ Crop ต้องมีสีพื้นหลังที่ตัดกับรูปภาพ */}
+                    <div className="relative max-w-full max-h-[70vh] overflow-auto bg-slate-900 rounded-xl p-4 border border-slate-800 shadow-2xl custom-scrollbar">
+                        <ReactCrop 
+                            crop={crop} 
+                            onChange={(c) => setCrop(c)}
+                            className="max-w-full"
+                        >
+                            <img 
+                                ref={imgRef}
+                                src={cropModal.src} 
+                                alt="Crop source" 
+                                onLoad={onImageLoad}
+                                className="max-w-full block" 
+                                style={{ maxHeight: '60vh' }}
+                            />
+                        </ReactCrop>
+                    </div>
+
+                    <div className="mt-8 flex gap-4 w-full max-w-md">
+                        <button 
+                            type="button"
+                            onClick={() => setCropModal({ isOpen: false, src: '', type: '' })}
+                            className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold uppercase text-xs transition-all border border-slate-700"
+                        >Discard</button>
+                        <button 
+                            type="button"
+                            onClick={handleSaveCrop}
+                            className="flex-[2] py-4 bg-orange-600 hover:bg-orange-500 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl shadow-orange-900/20 transition-all active:scale-95"
+                        >Confirm Crop ↗</button>
+                    </div>
+                </div>
+            )}
+
+            {/* --- HEADER --- */}
             <header className="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">
                         Object <span className="text-orange-500">Registry</span>
                     </h1>
-                    <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.3em]">X-Sim System Management v3.2</p>
                 </div>
-                <div className="text-right">
-                    <span className="text-[10px] font-black text-emerald-500 animate-pulse">● SYSTEM READY</span>
-                </div>
+                <div className="text-[10px] font-black text-emerald-500 animate-pulse uppercase">● Ready</div>
             </header>
 
+            {/* --- FORM --- */}
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800 shadow-xl">
-                    <div>
-                        <label className="block text-[10px] font-bold mb-2 uppercase tracking-widest text-slate-500">Object Name</label>
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Object Name</label>
                         <input
                             type="text" required
-                            className="w-full bg-black border-2 border-slate-800 p-3 rounded-xl text-orange-500 font-mono focus:border-orange-500 outline-none transition-all shadow-inner"
+                            className="w-full bg-black border-2 border-slate-800 p-3 rounded-xl text-orange-500 font-mono focus:border-orange-500 outline-none transition-all"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="INPUT_ID..."
+                            placeholder="OBJECT_ID_001"
                         />
                     </div>
-                    <div>
-                        <label className="block text-[10px] font-bold mb-2 uppercase tracking-widest text-slate-500">Hazard Classification</label>
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">Classification</label>
                         <select
                             required
                             className="w-full bg-black border-2 border-slate-800 p-3 rounded-xl text-white font-bold focus:border-orange-500 outline-none cursor-pointer"
                             value={formData.itemCategoryId}
                             onChange={(e) => setFormData({ ...formData, itemCategoryId: e.target.value })}
                         >
-                            <option value="" disabled className="text-slate-700">-- SELECT CLASS --</option>
+                            <option value="" disabled>-- SELECT --</option>
                             {categories.slice(1).map((cat) => (
-                                <option key={cat.id} value={cat.id} className="bg-slate-900">{cat.name.toUpperCase()}</option>
+                                <option key={cat.id} value={cat.id}>{cat.name.toUpperCase()}</option>
                             ))}
                         </select>
                     </div>
                 </div>
 
+                {/* --- PREVIEWS --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {['top', 'side', 'realImage'].map((type) => (
-                        <div key={type} className="flex flex-col" onClick={() => setActiveTab(type)}>
-                            <label className={`block text-[10px] font-bold mb-2 uppercase tracking-widest text-center transition-all ${activeTab === type ? 'text-orange-500' : 'text-slate-500'}`}>
-                                {type === 'realImage' ? 'Optical Ref' : `${type} Imaging`} {activeTab === type && '[*]'}
+                        <div key={type} className="flex flex-col cursor-pointer" onClick={() => setActiveTab(type)}>
+                            <label className={`block text-[10px] font-bold mb-2 uppercase tracking-widest text-center ${activeTab === type ? 'text-orange-500' : 'text-slate-500'}`}>
+                                {type === 'realImage' ? 'Optical' : type.toUpperCase()}
                             </label>
-                            <div className={`w-full aspect-square relative border-2 rounded-2xl flex items-center justify-center overflow-hidden transition-all group cursor-pointer
-                                ${activeTab === type ? 'border-orange-500 ring-4 ring-orange-500/10' : 'border-slate-800 border-dashed bg-black'}`}>
+                            <div className={`w-full aspect-[4/3] relative border-2 rounded-2xl flex items-center justify-center overflow-hidden transition-all group
+                                ${activeTab === type ? 'border-orange-500 bg-orange-500/5' : 'border-slate-800 bg-black hover:border-slate-700'}`}>
+                                
                                 {previews[type] ? (
-                                    <img src={previews[type]} alt="p" className="w-full h-full object-contain p-2" />
+                                    <img src={previews[type]} alt="preview" className="w-full h-full object-contain p-2" />
                                 ) : (
-                                    <div className="text-center group-hover:scale-110 transition-transform">
-                                        <div className="text-slate-800 text-3xl mb-1">⎙</div>
-                                        <span className="text-[8px] font-black text-slate-700 uppercase">Click/Paste</span>
+                                    <div className="text-center group-hover:scale-110 transition-transform opacity-30">
+                                        <div className="text-3xl mb-1">📷</div>
+                                        <span className="text-[8px] font-black uppercase">Upload/Paste</span>
                                     </div>
                                 )}
-                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => processFile(e.target.files[0], type)} />
+                                <input 
+                                    type="file" accept="image/*" 
+                                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                                    onChange={(e) => processFile(e.target.files[0], type)} 
+                                />
                             </div>
                         </div>
                     ))}
@@ -175,19 +252,19 @@ export default function ItemRegistration() {
                     <label className="block text-[10px] font-bold mb-2 uppercase tracking-widest text-slate-500">Forensic Notes</label>
                     <textarea
                         rows="3" required
-                        className="w-full bg-black border-2 border-slate-800 p-4 rounded-xl text-slate-300 font-medium focus:border-orange-500 outline-none shadow-inner resize-none"
+                        className="w-full bg-black border-2 border-slate-800 p-4 rounded-xl text-slate-300 outline-none focus:border-orange-500 transition-all resize-none"
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Detail physical characteristics..."
+                        placeholder="Analyze physical properties..."
                     />
                 </div>
 
                 <button
                     type="submit" disabled={isSubmitting}
-                    className={`w-full py-5 rounded-2xl font-black text-xl tracking-[0.3em] transition-all shadow-2xl uppercase italic
+                    className={`w-full py-5 rounded-2xl font-black text-xl tracking-[0.2em] transition-all shadow-2xl uppercase italic
                         ${isSubmitting ? 'bg-slate-800 text-slate-600' : 'bg-orange-600 hover:bg-orange-500 text-white active:scale-95'}`}
                 >
-                    {isSubmitting ? 'Synchronizing...' : 'Commit to Registry ↗'}
+                    {isSubmitting ? 'Syncing...' : 'Commit to Registry ↗'}
                 </button>
             </form>
         </div>

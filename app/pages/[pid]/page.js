@@ -11,14 +11,18 @@ import YearlyForensicLog from "@/app/components/YearlyForensicLog";
 import CorrectiveForm from "@/app/components/CorrectiveForm";
 import ManualPage from "@/app/components/ManualPage";
 import DirectBaggageEditor from "@/app/components/DirectBaggageEditor";
-
-
+import PolygonPlacementTest from "@/app/components/CorRoi";
+import ItemManager from "@/app/components/ItemManage";
 export default function DynamicPage() {
   const { pid } = useParams();
 
   // ✅ mapping component ตามชื่อ path
   const renderContent = () => {
     switch (pid) {
+      case 'itemmanager':
+        return <ItemManager />;
+      case 'Roi':
+        return <PolygonPlacementTest />
       case 'dashboard':
         return <Dashboard />
       case 'createimage':
