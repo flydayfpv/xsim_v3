@@ -8,7 +8,7 @@ const ICON_CHAR = "🔍";
 const canvasSize = { width: 850, height: 980 };
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const courseTime = 1; // minutes
-const speed = 3; 
+const speed = 2;
 
 // --------------------------- Canvas Class ---------------------------
 class _Canvas {
@@ -56,17 +56,22 @@ class _Canvas {
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.src = url;
-            await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
             this.originalImage = img;
-            this.imageX = -img.width;
+            // ไม่ต้องเซ็ต imageX ตรงนี้ ให้ animateLeftToRight เป็นคนจัดการ
             this.redraw();
         } catch (err) { console.error("Load Error:", err); }
     }
 
+    // ใน class _Canvas
     animateLeftToRight() {
         if (!this.originalImage) return;
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
+        // เริ่มต้นให้ "ท้ายรูป" อยู่ที่ขอบซ้าย (รูปอยู่นอกจอด้านซ้ายทั้งหมด)
         this.imageX = -this.originalImage.width;
         this.isPaused = false;
 
@@ -75,12 +80,20 @@ class _Canvas {
                 this.imageX += speed;
                 this.redraw();
             }
-            if (this.imageX > this.canvas.width) {
+
+            // แก้ไขเงื่อนไข: รอให้ "ขอบซ้ายของรูป" เดินทางไปถึง "ขอบขวาของ Canvas" 
+            // ภาพถึงจะหายไปจากจออย่างสมบูรณ์
+            if (this.imageX < this.canvas.width) {
+                this.animationFrameId = requestAnimationFrame(step);
+            } else {
+                // เมื่อภาพพ้นจอไปแล้วจริงๆ ถึงจะเรียก onAnimationEnd (Miss)
                 cancelAnimationFrame(this.animationFrameId);
-                if (this.onAnimationEnd) this.onAnimationEnd();
-                return;
+                if (this.onAnimationEnd) {
+                    // ป้องกันการเรียกซ้อน
+                    this.onAnimationEnd();
+                    this.onAnimationEnd = null; // Clear trigger เพื่อไม่ให้เรียกซ้ำ
+                }
             }
-            this.animationFrameId = requestAnimationFrame(step);
         };
         this.animationFrameId = requestAnimationFrame(step);
     }
@@ -89,17 +102,20 @@ class _Canvas {
         if (!this.originalImage) return;
         const img = this.originalImage;
         this.clearScreen();
+
+        // คำนวณขนาดภาพตาม Scale
         const drawW = img.width * this.scale;
         const drawH = img.height * this.scale;
-        const drawX = this.imageX;
+        const drawX = this.imageX; // พิกัด X ปัจจุบันจากการเคลื่อนที่
         const drawY = (this.canvas.height - drawH) / 2;
 
         this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
         this.lastDraw = { x: drawX, y: drawY, w: drawW, h: drawH };
 
+        // วาดไอคอนเป้าหมาย (ถ้ามี)
         if (this.iconPosition) {
-            this.ctx.font = `${40 * this.scale}px Arial`; this.ctx.fillStyle = "red";
-            this.ctx.textAlign = "center"; this.ctx.textBaseline = "middle";
+            this.ctx.font = `${40 * this.scale}px Arial`;
+            this.ctx.fillStyle = "red";
             this.ctx.fillText(ICON_CHAR, this.iconPosition.x, this.iconPosition.y);
         }
     }
@@ -233,7 +249,7 @@ export default function Page() {
         const currentImage = imageList[imageIndex];
         const correctId = currentImage?.itemCategoryID;
         const correctName = category.find(c => c.id === correctId)?.name || 'Unknown';
-        
+
         // Parse coords for storage
         const coords = typeof currentImage.itemPos === 'string' ? JSON.parse(currentImage.itemPos) : currentImage.itemPos;
 
@@ -242,9 +258,9 @@ export default function Page() {
         }));
         setFars(f => f + 1);
         setWrongAnswers(prev => [...prev, {
-            baggageId: currentImage.id, 
-            code: currentImage.code, 
-            correct: correctName, 
+            baggageId: currentImage.id,
+            code: currentImage.code,
+            correct: correctName,
             user: "MISSED (FLOW OUT)",
             targetCoords: coords // 🚀 STORED
         }]);
@@ -254,12 +270,17 @@ export default function Page() {
     }, [imageIndex, imageList, category, isFinished]);
 
     const nextImage = (wasAnswered = false) => {
+        // หยุด Animation เดิมทันทีที่ตอบหรือเปลี่ยนรูป
+        leftCanvasRef.current?.stop();
+        rightCanvasRef.current?.stop();
+
         if (!wasAnswered) setFars(f => f + 1);
+
         leftCanvasRef.current?.resetZoom();
         rightCanvasRef.current?.resetZoom();
         setLastClickInside(null);
-        if (category.length > 0) setSelectedAnswer(category[0].id.toString());
 
+        if (category.length > 0) setSelectedAnswer(category[0].id.toString());
         setImageIndex(prevIndex => (prevIndex + 1 >= imageList.length ? 0 : prevIndex + 1));
     };
 
@@ -339,11 +360,11 @@ export default function Page() {
             setFars(f => f + 1);
             const correctName = category.find(c => c.id === correctId)?.name || 'Unknown';
             const coords = typeof currentImage.itemPos === 'string' ? JSON.parse(currentImage.itemPos) : currentImage.itemPos;
-            
+
             setWrongAnswers(prev => [...prev, {
-                baggageId: currentImage.id, 
-                code: currentImage.code, 
-                correct: correctName, 
+                baggageId: currentImage.id,
+                code: currentImage.code,
+                correct: correctName,
                 user: category.find(c => c.id === selectedId)?.name || 'WRONG CLICK',
                 targetCoords: coords // 🚀 STORED
             }]);

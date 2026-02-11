@@ -178,7 +178,7 @@ export default function SelectionPage() {
             <button
               disabled={!selectedCatId}
               onClick={handleFinalNavigate}
-              className={`w-full py-8 rounded-[2rem] font-black text-3xl flex items-center justify-center gap-4 transition-all shadow-xl ${
+              className={`w-full py-8 rounded-4xl font-black text-3xl flex items-center justify-center gap-4 transition-all shadow-xl ${
                 selectedCatId 
                 ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-900/40 hover:-translate-y-2 active:scale-95' 
                 : 'bg-white/5 text-gray-700 cursor-not-allowed opacity-40'

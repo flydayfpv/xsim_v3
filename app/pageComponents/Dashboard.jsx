@@ -6,7 +6,7 @@ import { ShieldCheck, Zap, LayoutGrid } from 'lucide-react';
 
 const ProfessionalDashboard = () => {
   return (
-    <div className="min-h-screen w-full bg-[#050505]/90 text-white overflow-y-auto">
+    <div className="min-h-screen w-full bg-[#050505]/95 text-white overflow-y-auto">
 
       {/* Container - Large max-width for full page feel */}
       <div className="max-w-425 mx-auto p-10 lg:p-16 space-y-16">
