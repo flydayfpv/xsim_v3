@@ -84,14 +84,14 @@ export default function ItemManager() {
                     {items.map((item) => (
                         <div 
                             key={item.id} 
-                            className="group flex items-center gap-8 bg-slate-900/40 border-2 border-slate-800 p-6 rounded-[2rem] hover:border-orange-500 transition-all hover:bg-slate-900 shadow-xl"
+                            className="group flex items-center gap-8 bg-slate-900/40 border-2 border-slate-800 p-6 rounded-4xl hover:border-orange-500 transition-all hover:bg-slate-900 shadow-xl"
                         >
                             {/* ENLARGED THUMBNAILS (X2) */}
                             <div className="flex gap-3">
-                                <div className="w-28 h-28 bg-black rounded-2xl border-2 border-slate-700 p-2 flex-shrink-0 overflow-hidden shadow-inner">
+                                <div className="w-28 h-28 bg-black rounded-2xl border-2 border-slate-700 p-2 shrink-0 overflow-hidden shadow-inner">
                                     <img src={`${API_URL}/${item.top}`} className="w-full h-full object-contain" alt="top" />
                                 </div>
-                                <div className="w-28 h-28 bg-black rounded-2xl border-2 border-slate-700 p-2 flex-shrink-0 overflow-hidden shadow-inner">
+                                <div className="w-28 h-28 bg-black rounded-2xl border-2 border-slate-700 p-2 shrink-0flow-hidden shadow-inner">
                                     <img src={`${API_URL}/${item.side}`} className="w-full h-full object-contain" alt="side" />
                                 </div>
                             </div>

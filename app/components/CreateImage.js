@@ -326,7 +326,7 @@ export default function DualViewEditor() {
                         <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Target Objects</label>
                         {itemList.map(item => (
                             <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative bg-slate-800/40 border border-slate-700 rounded-xl p-3 hover:border-orange-500 cursor-pointer flex gap-4 items-center transition-all ${selectedItem?.id === item.id ? 'border-orange-600 bg-slate-800 ring-2 ring-orange-900/20 translate-x-1' : ''}`}>
-                                <div className="w-10 h-10 bg-black rounded p-1 flex-shrink-0 border border-slate-700"><img src={`${API_URL}/${item.top}`} className="w-full h-full object-contain" /></div>
+                                <div className="w-10 h-10 bg-black rounded p-1 shrink-0 border border-slate-700"><img src={`${API_URL}/${item.top}`} className="w-full h-full object-contain" /></div>
                                 <span className="text-[10px] font-black uppercase truncate text-slate-300 group-hover:text-white leading-tight">{item.name}</span>
                             </div>
                         ))}
@@ -336,7 +336,7 @@ export default function DualViewEditor() {
 
             {/* MODAL */}
             {isRegistrationOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
                     <div className="relative w-full max-w-6xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
                         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                             <h3 className="text-orange-500 font-black italic uppercase tracking-tighter">System Registry</h3>

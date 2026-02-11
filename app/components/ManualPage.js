@@ -120,7 +120,7 @@ const ManualPage = () => {
         {/* Lightbox Modal */}
         {isLightboxOpen && (
           <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
             onClick={() => setIsLightboxOpen(false)}
           >
             <button className="absolute top-10 right-10 text-white/50 hover:text-red-600 transition-colors">
@@ -133,7 +133,7 @@ const ManualPage = () => {
                     alt="Enlarged Console" 
                 />
                 <div className="mt-6 text-center">
-                    <p className="text-red-600 font-black text-2xl uppercase italic italic tracking-tighter">Main Control Interface</p>
+                    <p className="text-red-600 font-black text-2xl uppercase italic tracking-tighter">Main Control Interface</p>
                     <p className="text-gray-500 uppercase tracking-widest text-sm font-bold">Dual-View X-Ray Inspection System // CBT Mode</p>
                 </div>
             </div>
@@ -168,7 +168,7 @@ const ManualPage = () => {
               </div>
               <h3 className="text-2xl font-black uppercase text-blue-400 italic">2. Left Click + Drag</h3>
               <p className="text-gray-400 leading-relaxed font-medium">
-                <span className="text-white font-bold block mb-1 font-black">การแพนภาพ (Pan):</span>
+                <span className="text-white font-black block mb-1">การแพนภาพ (Pan):</span>
                 คลิกเมาส์ซ้ายค้างไว้บนภาพ X-ray แล้วลากเพื่อสำรวจพื้นที่ต่างๆ ของสัมภาระทั้งในมุมมอง Top และ Side
               </p>
             </div>
@@ -199,12 +199,11 @@ const ManualPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filterControls.map((item) => (
               <div key={item.key} className="bg-[#0a0a0a] border border-white/5 p-6 rounded-4xl flex items-center gap-6 hover:bg-white/5 transition-all group border-l-4 border-l-red-600 shadow-xl">
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-3 shrink-0">
                     <kbd className="px-5 py-2 bg-black rounded-xl font-mono text-3xl font-black text-red-600 border border-white/10 shadow-lg group-hover:scale-110 group-hover:text-white transition-all">
                         {item.key}
                     </kbd>
                     <div className="w-16 h-16 overflow-hidden rounded-xl bg-black flex items-center justify-center border border-white/10 group-hover:border-red-600/50 transition-colors shadow-inner">
-                        {/* icon path from /public../images/ */}
                         <img src={`../images/${item.icon}`} alt={item.label} className="w-full h-full object-cover p-1 opacity-80 group-hover:opacity-100" />
                     </div>
                 </div>
@@ -222,17 +221,16 @@ const ManualPage = () => {
             ))}
           </div>
 
-          {/* Special Control Keys */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-red-950/20 border border-red-600/30 p-8 rounded-4xl flex items-center gap-8 group">
-                <kbd className="px-8 py-3 bg-black rounded-2xl font-mono text-3xl font-black text-white border-b-4 border-red-600 italic shadow-2xl group-hover:scale-105 transition-transform">R</kbd>
+                <kbd className="px-8 py-3 bg-black rounded-2xl font-mono text-3xl font-black text-white border-b-4 border-red-600 italic shadow-2xl group-hover:scale-105 transition-transform text-center min-w-24 shrink-0">R</kbd>
                 <div>
                     <span className="text-xl font-black uppercase block text-red-500 italic">RESET IMAGE</span>
                     <p className="text-gray-400 text-[15px] leading-tight font-medium mt-1">รีเซ็ตการตั้งค่าตัวกรองทั้งหมด รวมถึงระดับการซูมและตำแหน่งภาพกลับสู่ค่าเริ่มต้น</p>
                 </div>
               </div>
               <div className="bg-white/5 border border-white/10 p-8 rounded-4xl flex items-center gap-8 group">
-                <kbd className="px-6 py-3 bg-black rounded-2xl font-mono text-xl font-black text-white border-b-4 border-white/30 italic uppercase shadow-2xl group-hover:scale-105 transition-transform">Space</kbd>
+                <kbd className="px-6 py-3 bg-black rounded-2xl font-mono text-xl font-black text-white border-b-4 border-white/30 italic uppercase shadow-2xl group-hover:scale-105 transition-transform text-center min-w-24 shrink-0">Space</kbd>
                 <div>
                     <span className="text-xl font-black uppercase block text-white italic">STOP / START</span>
                     <p className="text-gray-400 text-[15px] leading-tight font-medium mt-1">ควบคุมการหยุดหรือเริ่มเดินสายพานลำเลียงสัมภาระเข้าสู่เครื่อง X-Ray</p>
@@ -255,7 +253,7 @@ const ManualPage = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white/5 border-b border-white/10 text-gray-400">
-                  <th className="p-8 text-sm font-black uppercase tracking-widest italic">Accuracy Range</th>
+                  <th className="p-8 text-sm font-black uppercase tracking-widest italic text-red-600">Accuracy Range</th>
                   <th className="p-8 text-sm font-black uppercase tracking-widest italic text-right">Time Credit (Mins)</th>
                 </tr>
               </thead>
@@ -280,12 +278,7 @@ const ManualPage = () => {
           </div>
         </section>
 
-        {/* Footer */}
         <footer className="text-center py-20 border-t border-white/5">
-            <div className="flex justify-center gap-8 mb-6 opacity-30">
-                <img src="../images/logo_client.png" alt="AOT" className="h-10 grayscale invert" />
-                <img src="../images/logo_system.png" alt="X-SIM" className="h-10 grayscale invert" />
-            </div>
             <p className="text-gray-600 text-xs font-black uppercase tracking-[0.4em]">X-Sim V.3 // Flyday FPV System // Security Intelligence Division</p>
             <p className="text-[14px] text-gray-700 font-bold mt-2 uppercase italic tracking-widest">สงวนลิขสิทธิ์เนื้อหาและระบบการฝึกซ้อมเพื่อความปลอดภัยทางการบิน</p>
         </footer>

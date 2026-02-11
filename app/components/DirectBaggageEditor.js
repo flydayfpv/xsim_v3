@@ -283,7 +283,7 @@ export default function DualViewEditor() {
                             className={`group relative bg-slate-800/40 border border-slate-700 rounded-xl p-3 hover:border-orange-500 cursor-pointer flex gap-4 items-center transition-all 
                                 ${selectedItem?.id === item.id ? 'border-orange-600 bg-slate-800 translate-x-1' : 'hover:bg-slate-800/60'}`}
                         >
-                            <div className="w-14 h-14 bg-black rounded-lg border border-slate-600 flex-shrink-0 overflow-hidden shadow-lg p-1">
+                            <div className="w-14 h-14 bg-black rounded-lg border border-slate-600 shrink-0 overflow-hidden shadow-lg p-1">
                                 <img src={`${API_URL}/${item.top}`} alt="p" className={`w-full h-full object-contain ${selectedItem?.id === item.id ? 'grayscale-0' : 'grayscale'}`} />
                             </div>
                             <div className="flex flex-col overflow-hidden">
@@ -341,7 +341,7 @@ export default function DualViewEditor() {
 
             {/* --- REGISTRATION MODAL --- */}
             {isRegistrationOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
                     <div className="relative w-full max-w-6xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden flex flex-col">
                         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                             <h3 className="text-orange-500 font-black italic uppercase">System Registry: Item Management</h3>

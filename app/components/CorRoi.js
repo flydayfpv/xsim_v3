@@ -180,7 +180,7 @@ export default function XSimV3XLEditor() {
                 </div>
 
                 <div className="flex flex-col gap-5 border-l-4 border-slate-800 pl-10 justify-center">
-                    <button onClick={autoPlaceSync} className="bg-emerald-600 hover:bg-emerald-500 text-3xl font-black py-8 rounded-[2rem] shadow-2xl transition-all active:scale-95 uppercase italic">
+                    <button onClick={autoPlaceSync} className="bg-emerald-600 hover:bg-emerald-500 text-3xl font-black py-8 rounded-4xl shadow-2xl transition-all active:scale-95 uppercase italic">
                         🚀 AUTO SYNC
                     </button>
                     <button onClick={() => {setTopPolygon([]); setSidePolygon([]);}} className="text-xl text-slate-500 font-bold underline decoration-slate-700">PURGE ROI DATA</button>
@@ -190,11 +190,11 @@ export default function XSimV3XLEditor() {
             {/* XL CANVAS AREA */}
             <div className="flex flex-row gap-10 justify-center flex-1 items-start">
                 <div className="flex flex-col gap-4">
-                    <div className="text-3xl font-black bg-orange-600 inline-block px-8 py-2 skew-x-[-12deg] self-start uppercase">TOP CHANNEL</div>
+                    <div className="text-3xl font-black bg-orange-600 inline-block px-8 py-2 -skew-x-12 self-start uppercase">TOP CHANNEL</div>
                     <canvas ref={topCanvasRef} onMouseDown={(e) => handleMouseDown(e, 'top')} className="bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] cursor-crosshair" />
                 </div>
                 <div className="flex flex-col gap-4">
-                    <div className="text-3xl font-black bg-blue-600 inline-block px-8 py-2 skew-x-[-12deg] self-start uppercase">SIDE CHANNEL</div>
+                    <div className="text-3xl font-black bg-blue-600 inline-block px-8 py-2 -skew-x-12 self-start uppercase">SIDE CHANNEL</div>
                     <canvas ref={sideCanvasRef} onMouseDown={(e) => handleMouseDown(e, 'side')} className="bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] cursor-crosshair" />
                 </div>
             </div>

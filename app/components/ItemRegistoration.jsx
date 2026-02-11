@@ -142,7 +142,7 @@ export default function ItemRegistration() {
             
             {/* --- MODAL CROPPER (FIXED INTERACTION) --- */}
             {cropModal.isOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-6 backdrop-blur-lg">
+                <div className="fixed inset-0 z-100g-black/95 flex flex-col items-center justify-center p-6 backdrop-blur-lg">
                     <div className="w-full max-w-4xl text-center mb-6">
                         <h2 className="text-orange-500 font-black italic uppercase text-2xl tracking-tighter">Advanced Calibration</h2>
                         <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em]">Drag corner handles to define object boundaries</p>
@@ -175,7 +175,7 @@ export default function ItemRegistration() {
                         <button 
                             type="button"
                             onClick={handleSaveCrop}
-                            className="flex-[2] py-4 bg-orange-600 hover:bg-orange-500 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl shadow-orange-900/20 transition-all active:scale-95"
+                            className="flex-2 py-4 bg-orange-600 hover:bg-orange-500 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl shadow-orange-900/20 transition-all active:scale-95"
                         >Confirm Crop ↗</button>
                     </div>
                 </div>
@@ -227,7 +227,7 @@ export default function ItemRegistration() {
                             <label className={`block text-[10px] font-bold mb-2 uppercase tracking-widest text-center ${activeTab === type ? 'text-orange-500' : 'text-slate-500'}`}>
                                 {type === 'realImage' ? 'Optical' : type.toUpperCase()}
                             </label>
-                            <div className={`w-full aspect-[4/3] relative border-2 rounded-2xl flex items-center justify-center overflow-hidden transition-all group
+                            <div className={`w-full aspect-4/3 relative border-2 rounded-2xl flex items-center justify-center overflow-hidden transition-all group
                                 ${activeTab === type ? 'border-orange-500 bg-orange-500/5' : 'border-slate-800 bg-black hover:border-slate-700'}`}>
                                 
                                 {previews[type] ? (
